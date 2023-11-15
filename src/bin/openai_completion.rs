@@ -17,6 +17,7 @@ async fn main_func() -> anyhow::Result<()> {
             llm_funcs::llm::OpenAIModel::GPT3_5Instruct,
             "What are we doing here",
             sender,
+            None,
         )
         .await
         .expect("to not fail");

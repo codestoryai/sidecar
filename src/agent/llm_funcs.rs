@@ -457,6 +457,7 @@ impl LlmClient {
         let request =
             self.create_request(model, messages, functions, temperature, frequency_penalty);
 
+        dbg!(&request);
         const TOTAL_CHAT_RETRIES: usize = 5;
 
         'retry_loop: for _ in 0..TOTAL_CHAT_RETRIES {

@@ -768,6 +768,7 @@ impl Agent {
                 sender,
             )
             .await?;
+        dbg!(&reply);
 
         let last_message = self.get_last_conversation_message();
         last_message.set_answer(reply.to_owned());

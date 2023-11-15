@@ -1,0 +1,318 @@
+{
+    "chunks": [
+        [
+            {
+                "rhs": {
+                    "line_number": 18,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 18,
+                            "content": "format",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 18,
+                            "end": 19,
+                            "content": "!",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 19,
+                            "end": 20,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 20,
+                            "end": 59,
+                            "content": "\"Please add {comment_type} for {name}.\"",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 59,
+                            "end": 60,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 19,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 9,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 20,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 12,
+                            "content": "None",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 13,
+                            "end": 15,
+                            "content": "=>",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 22,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 9,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 23,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 17,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 12,
+                            "content": "Some",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 13,
+                            "end": 17,
+                            "content": "name",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 18,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 19,
+                            "end": 21,
+                            "content": "=>",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 22,
+                            "end": 23,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 21,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 18,
+                            "content": "format",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 18,
+                            "end": 19,
+                            "content": "!",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 19,
+                            "end": 20,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 20,
+                            "end": 66,
+                            "content": "\"Please add {comment_type} for the selection.\"",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 66,
+                            "end": 67,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 12,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 12,
+                            "content": "\"go\"",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 13,
+                            "end": 15,
+                            "content": "=>",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 31,
+                            "content": "\"GoDoc comment\"",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 31,
+                            "end": 32,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 40,
+                            "content": "to_owned",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 40,
+                            "end": 41,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 41,
+                            "end": 42,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 42,
+                            "end": 43,
+                            "content": ",",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 44,
+                            "end": 71,
+                            "content": "// Add this line for Golang",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 16,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 9,
+                            "content": "match",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 10,
+                            "end": 11,
+                            "content": "&",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 11,
+                            "end": 26,
+                            "content": "document_symbol",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 31,
+                            "content": "name",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 16,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 30,
+                            "content": "// Rest of the function...",
+                            "highlight": "comment"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 15,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 68,
+                            "content": "// Now we want to generate the document symbol metadata properly",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            }
+        ]
+    ],
+    "language": "Rust",
+    "path": "./src/bin/testing2.rs",
+    "status": "changed"
+}

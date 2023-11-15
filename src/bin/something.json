@@ -1,0 +1,3585 @@
+{
+    "chunks": [
+        [
+            {
+                "lhs": {
+                    "line_number": 0,
+                    "changes": [
+                        {
+                            "start": 0,
+                            "end": 95,
+                            "content": "/*---------------------------------------------------------------------------------------------",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 1,
+                    "changes": [
+                        {
+                            "start": 0,
+                            "end": 61,
+                            "content": " *  Copyright (c) Microsoft Corporation. All rights reserved.",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 2,
+                    "changes": [
+                        {
+                            "start": 0,
+                            "end": 96,
+                            "content": " *  Licensed under the MIT License. See License.txt in the project root for license information.",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 3,
+                    "changes": [
+                        {
+                            "start": 0,
+                            "end": 96,
+                            "content": " *--------------------------------------------------------------------------------------------*/",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            }
+        ],
+        [
+            {
+                "rhs": {
+                    "line_number": 1,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 11,
+                            "content": "console",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 11,
+                            "end": 12,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 12,
+                            "end": 16,
+                            "content": "time",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 17,
+                            "end": 29,
+                            "content": "\"Fetch Time\"",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 29,
+                            "end": 30,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 30,
+                            "end": 31,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            }
+        ],
+        [
+            {
+                "lhs": {
+                    "line_number": 16,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 9,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 10,
+                            "end": 16,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 18,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 19,
+                            "end": 27,
+                            "content": "response",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 28,
+                            "end": 32,
+                            "content": "body",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 33,
+                            "end": 44,
+                            "content": "pipeThrough",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 44,
+                            "end": 45,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 45,
+                            "end": 48,
+                            "content": "new",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 49,
+                            "end": 66,
+                            "content": "TextDecoderStream",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 66,
+                            "end": 67,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 67,
+                            "end": 68,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 68,
+                            "end": 69,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 70,
+                            "end": 79,
+                            "content": "getReader",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 9,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 11,
+                            "content": "console",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 12,
+                            "end": 19,
+                            "content": "timeEnd",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 32,
+                            "content": "\"Fetch Time\"",
+                            "highlight": "string"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 20,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 17,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 18,
+                            "end": 19,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 20,
+                            "end": 25,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": ",",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 31,
+                            "content": "done",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 34,
+                            "end": 35,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 36,
+                            "end": 41,
+                            "content": "await",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 42,
+                            "end": 48,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 48,
+                            "end": 49,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 49,
+                            "end": 53,
+                            "content": "read",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 53,
+                            "end": 54,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 54,
+                            "end": 55,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 55,
+                            "end": 56,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 53,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 24,
+                            "content": "continue",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 24,
+                            "end": 25,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 44,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 46,
+                            "content": "// log when we have a hit for this",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "rhs": {
+                    "line_number": 14,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 11,
+                            "content": "console",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 11,
+                            "end": 12,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 12,
+                            "end": 16,
+                            "content": "time",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 17,
+                            "end": 29,
+                            "content": "\"Fetch Time\"",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 29,
+                            "end": 30,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 30,
+                            "end": 31,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 46,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "i",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 18,
+                            "end": 21,
+                            "content": "!==",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 22,
+                            "end": 23,
+                            "content": "0",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 23,
+                            "end": 24,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 22,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "break",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 13,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 6,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 7,
+                            "end": 8,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 8,
+                            "end": 16,
+                            "content": "response",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 21,
+                            "content": "body",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 22,
+                            "end": 25,
+                            "content": "===",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 26,
+                            "end": 30,
+                            "content": "null",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 30,
+                            "end": 31,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 14,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 14,
+                            "content": "return",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 64,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 14,
+                            "content": "return",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 26,
+                            "content": "finalAnswer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 19,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 13,
+                            "content": "while",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 15,
+                            "end": 19,
+                            "content": "true",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 19,
+                            "end": 20,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 54,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 62,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 16,
+                            "content": "this",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 24,
+                            "content": "_buffer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 28,
+                            "end": 29,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 29,
+                            "end": 30,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 58,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "event",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 23,
+                            "end": 24,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 32,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 11,
+                            "content": "private",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 12,
+                            "end": 19,
+                            "content": "_buffer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 19,
+                            "end": 20,
+                            "content": ":",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 21,
+                            "end": 27,
+                            "content": "string",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 28,
+                            "end": 29,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 29,
+                            "end": 30,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 39,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 13,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 25,
+                            "content": "finalAnswer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": ":",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 33,
+                            "content": "string",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 33,
+                            "end": 34,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 34,
+                            "end": 35,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 36,
+                            "end": 37,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 38,
+                            "end": 39,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 39,
+                            "end": 40,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 40,
+                            "end": 41,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 24,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 17,
+                            "content": "yield",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 18,
+                            "end": 23,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 23,
+                            "end": 24,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 31,
+                    "changes": [
+                        {
+                            "start": 0,
+                            "end": 5,
+                            "content": "class",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 6,
+                            "end": 20,
+                            "content": "BufferedStream",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 56,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 17,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 18,
+                            "end": 23,
+                            "content": "event",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 24,
+                            "end": 25,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 26,
+                            "end": 30,
+                            "content": "this",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 30,
+                            "end": 31,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 31,
+                            "end": 38,
+                            "content": "_buffer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 38,
+                            "end": 39,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 39,
+                            "end": 43,
+                            "content": "join",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 43,
+                            "end": 44,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 44,
+                            "end": 46,
+                            "content": "''",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 46,
+                            "end": 47,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 47,
+                            "end": 48,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 47,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 32,
+                            "content": "isEventSeparator",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 33,
+                            "end": 34,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 35,
+                            "end": 40,
+                            "content": "chunk",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 40,
+                            "end": 41,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 41,
+                            "end": 42,
+                            "content": "i",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 42,
+                            "end": 43,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 44,
+                            "end": 47,
+                            "content": "===",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 48,
+                            "end": 52,
+                            "content": "'\\n'",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 53,
+                            "end": 55,
+                            "content": "&&",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 56,
+                            "end": 61,
+                            "content": "chunk",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 61,
+                            "end": 62,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 62,
+                            "end": 63,
+                            "content": "i",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 64,
+                            "end": 65,
+                            "content": "-",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 66,
+                            "end": 67,
+                            "content": "1",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 67,
+                            "end": 68,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 69,
+                            "end": 72,
+                            "content": "===",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 73,
+                            "end": 77,
+                            "content": "'\\n'",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 77,
+                            "end": 78,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 23,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 17,
+                    "changes": []
+                },
+                "rhs": {
+                    "line_number": 10,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 23,
+                            "content": "// rest of the code",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 35,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 12,
+                            "content": "this",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 13,
+                            "end": 20,
+                            "content": "_buffer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 23,
+                            "end": 24,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 24,
+                            "end": 25,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 50,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 66,
+                            "content": "// Keep buffering unless we've hit the end of an event",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 63,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 9,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 52,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 20,
+                            "content": "this",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 21,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 21,
+                            "end": 28,
+                            "content": "_buffer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 28,
+                            "end": 29,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 29,
+                            "end": 33,
+                            "content": "push",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 33,
+                            "end": 34,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 34,
+                            "end": 39,
+                            "content": "chunk",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 39,
+                            "end": 40,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 40,
+                            "end": 41,
+                            "content": "i",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 41,
+                            "end": 42,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 42,
+                            "end": 43,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 43,
+                            "end": 44,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 15,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 41,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 11,
+                            "content": "for",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 13,
+                            "end": 16,
+                            "content": "let",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 17,
+                            "end": 18,
+                            "content": "i",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 19,
+                            "end": 20,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": "0",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 22,
+                            "end": 23,
+                            "content": ",",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 24,
+                            "end": 27,
+                            "content": "len",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 28,
+                            "end": 29,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 30,
+                            "end": 35,
+                            "content": "chunk",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 35,
+                            "end": 36,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 36,
+                            "end": 42,
+                            "content": "length",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 42,
+                            "end": 43,
+                            "content": ";",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 44,
+                            "end": 45,
+                            "content": "i",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 46,
+                            "end": 47,
+                            "content": "<",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 48,
+                            "end": 51,
+                            "content": "len",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 51,
+                            "end": 52,
+                            "content": ";",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 53,
+                            "end": 55,
+                            "content": "++",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 55,
+                            "end": 56,
+                            "content": "i",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 56,
+                            "end": 57,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 58,
+                            "end": 59,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 65,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 66,
+                    "changes": [
+                        {
+                            "start": 0,
+                            "end": 1,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 60,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 45,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 15,
+                            "content": "let",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 16,
+                            "end": 32,
+                            "content": "isEventSeparator",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 33,
+                            "end": 34,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 35,
+                            "end": 40,
+                            "content": "false",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 40,
+                            "end": 41,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 26,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 6,
+                            "end": 13,
+                            "content": "finally",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 27,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 14,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 15,
+                            "end": 26,
+                            "content": "releaseLock",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 28,
+                            "end": 29,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 28,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 36,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 43,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 62,
+                            "content": "// axum sends \\n\\n as the separator between events",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 59,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 27,
+                            "content": "finalAnswer",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 28,
+                            "end": 32,
+                            "content": "push",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 33,
+                            "end": 38,
+                            "content": "event",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 38,
+                            "end": 39,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 39,
+                            "end": 40,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 25,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 9,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 34,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 15,
+                            "content": "constructor",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 18,
+                            "end": 19,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 18,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 7,
+                            "content": "try",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 8,
+                            "end": 9,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 21,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 20,
+                            "content": "done",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 21,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 22,
+                            "end": 23,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 38,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 10,
+                            "content": "public",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 11,
+                            "end": 20,
+                            "content": "transform",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 21,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 21,
+                            "end": 26,
+                            "content": "chunk",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": ":",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 28,
+                            "end": 34,
+                            "content": "string",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 34,
+                            "end": 35,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 35,
+                            "end": 36,
+                            "content": ":",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 37,
+                            "end": 43,
+                            "content": "string",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 43,
+                            "end": 44,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 44,
+                            "end": 45,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 46,
+                            "end": 47,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 48,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 51,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "!",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 17,
+                            "end": 33,
+                            "content": "isEventSeparator",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 33,
+                            "end": 34,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 35,
+                            "end": 36,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            }
+        ],
+        [
+            {
+                "lhs": {
+                    "line_number": 90,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 95,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "yield",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 22,
+                            "end": 27,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 81,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 9,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 10,
+                            "end": 16,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 18,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 19,
+                            "end": 27,
+                            "content": "response",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 28,
+                            "end": 32,
+                            "content": "body",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 33,
+                            "end": 44,
+                            "content": "pipeThrough",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 44,
+                            "end": 45,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 45,
+                            "end": 48,
+                            "content": "new",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 49,
+                            "end": 66,
+                            "content": "TextDecoderStream",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 66,
+                            "end": 67,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 67,
+                            "end": 68,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 68,
+                            "end": 69,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 70,
+                            "end": 79,
+                            "content": "getReader",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 22,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 11,
+                            "content": "console",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 12,
+                            "end": 19,
+                            "content": "timeEnd",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 32,
+                            "content": "\"Fetch Time\"",
+                            "highlight": "string"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 87,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 15,
+                            "content": "let",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 16,
+                            "end": 25,
+                            "content": "newValues",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": ":",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 33,
+                            "content": "string",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 33,
+                            "end": 34,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 34,
+                            "end": 35,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 36,
+                            "end": 37,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 38,
+                            "end": 39,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 39,
+                            "end": 40,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 40,
+                            "end": 41,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 27,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 31,
+                            "content": "// rest of the code",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 93,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 82,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 9,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 10,
+                            "end": 24,
+                            "content": "bufferedReader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 27,
+                            "end": 30,
+                            "content": "new",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 31,
+                            "end": 45,
+                            "content": "BufferedStream",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 45,
+                            "end": 46,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 46,
+                            "end": 47,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 47,
+                            "end": 48,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 23,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 23,
+                            "content": "// rest of the code",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 99,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 14,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 15,
+                            "end": 26,
+                            "content": "releaseLock",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 28,
+                            "end": 29,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 30,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 27,
+                            "content": "// rest of the code",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 89,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 25,
+                            "content": "newValues",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 28,
+                            "end": 42,
+                            "content": "bufferedReader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 42,
+                            "end": 43,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 43,
+                            "end": 52,
+                            "content": "transform",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 52,
+                            "end": 53,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 53,
+                            "end": 58,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 58,
+                            "end": 59,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 59,
+                            "end": 60,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 96,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 94,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 15,
+                            "content": "for",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 17,
+                            "end": 22,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 23,
+                            "end": 28,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 29,
+                            "end": 31,
+                            "content": "of",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 32,
+                            "end": 41,
+                            "content": "newValues",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 41,
+                            "end": 42,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 43,
+                            "end": 44,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 86,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 17,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 18,
+                            "end": 19,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 20,
+                            "end": 25,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": ",",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 31,
+                            "content": "done",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 34,
+                            "end": 35,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 36,
+                            "end": 41,
+                            "content": "await",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 42,
+                            "end": 48,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 49,
+                            "end": 53,
+                            "content": "read",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 26,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 19,
+                            "content": "console",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 23,
+                            "content": "log",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 24,
+                            "end": 35,
+                            "content": "'iterating'",
+                            "highlight": "string"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 88,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 22,
+                            "end": 25,
+                            "content": "!==",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 26,
+                            "end": 35,
+                            "content": "undefined",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 35,
+                            "end": 36,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 37,
+                            "end": 38,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 79,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 77,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 6,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 7,
+                            "end": 8,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 8,
+                            "end": 16,
+                            "content": "response",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 21,
+                            "content": "body",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 22,
+                            "end": 25,
+                            "content": "===",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 26,
+                            "end": 30,
+                            "content": "null",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 30,
+                            "end": 31,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 91,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 20,
+                            "content": "done",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 21,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 22,
+                            "end": 23,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 78,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 14,
+                            "content": "return",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 92,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "break",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            }
+        ],
+        [
+            {
+                "rhs": {
+                    "line_number": 35,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 11,
+                            "content": "console",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 11,
+                            "end": 12,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 12,
+                            "end": 16,
+                            "content": "time",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 17,
+                            "end": 29,
+                            "content": "\"Fetch Time\"",
+                            "highlight": "string"
+                        },
+                        {
+                            "start": 29,
+                            "end": 30,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 30,
+                            "end": 31,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            }
+        ],
+        [
+            {
+                "lhs": {
+                    "line_number": 125,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 25,
+                            "content": "newValues",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 28,
+                            "end": 42,
+                            "content": "bufferedReader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 42,
+                            "end": 43,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 43,
+                            "end": 52,
+                            "content": "transform",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 52,
+                            "end": 53,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 53,
+                            "end": 58,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 58,
+                            "end": 59,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 59,
+                            "end": 60,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 135,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 14,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 15,
+                            "end": 26,
+                            "content": "releaseLock",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 26,
+                            "end": 27,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 28,
+                            "end": 29,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 129,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 120,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 7,
+                            "content": "try",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 8,
+                            "end": 9,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 134,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 6,
+                            "end": 13,
+                            "content": "finally",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 133,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 9,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 126,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 118,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 9,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 10,
+                            "end": 24,
+                            "content": "bufferedReader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 27,
+                            "end": 30,
+                            "content": "new",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 31,
+                            "end": 45,
+                            "content": "BufferedStream",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 45,
+                            "end": 46,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 46,
+                            "end": 47,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 47,
+                            "end": 48,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 45,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 23,
+                            "content": "// rest of the code",
+                            "highlight": "comment"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 132,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 13,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 122,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 17,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 18,
+                            "end": 19,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 20,
+                            "end": 25,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": ",",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 31,
+                            "content": "done",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 34,
+                            "end": 35,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 36,
+                            "end": 41,
+                            "content": "await",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 42,
+                            "end": 48,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 48,
+                            "end": 49,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 49,
+                            "end": 53,
+                            "content": "read",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 53,
+                            "end": 54,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 54,
+                            "end": 55,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 55,
+                            "end": 56,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 131,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "yield",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 22,
+                            "end": 27,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 127,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 20,
+                            "content": "done",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 21,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 22,
+                            "end": 23,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 136,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 121,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 13,
+                            "content": "while",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 15,
+                            "end": 19,
+                            "content": "true",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 19,
+                            "end": 20,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 128,
+                    "changes": [
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "break",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 21,
+                            "end": 22,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 130,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 15,
+                            "content": "for",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 17,
+                            "end": 22,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 23,
+                            "end": 28,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 29,
+                            "end": 31,
+                            "content": "of",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 32,
+                            "end": 41,
+                            "content": "newValues",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 41,
+                            "end": 42,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 43,
+                            "end": 44,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 113,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 6,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 7,
+                            "end": 8,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 8,
+                            "end": 16,
+                            "content": "response",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 16,
+                            "end": 17,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 21,
+                            "content": "body",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 22,
+                            "end": 25,
+                            "content": "===",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 26,
+                            "end": 30,
+                            "content": "null",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 30,
+                            "end": 31,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 123,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 15,
+                            "content": "let",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 16,
+                            "end": 25,
+                            "content": "newValues",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 25,
+                            "end": 26,
+                            "content": ":",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 33,
+                            "content": "string",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 33,
+                            "end": 34,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 34,
+                            "end": 35,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 36,
+                            "end": 37,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 38,
+                            "end": 39,
+                            "content": "[",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 39,
+                            "end": 40,
+                            "content": "]",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 40,
+                            "end": 41,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 114,
+                    "changes": [
+                        {
+                            "start": 8,
+                            "end": 14,
+                            "content": "return",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 14,
+                            "end": 15,
+                            "content": ";",
+                            "highlight": "normal"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 115,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 5,
+                            "content": "}",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 117,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 9,
+                            "content": "const",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 10,
+                            "end": 16,
+                            "content": "reader",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 17,
+                            "end": 18,
+                            "content": "=",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 19,
+                            "end": 27,
+                            "content": "response",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 27,
+                            "end": 28,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 28,
+                            "end": 32,
+                            "content": "body",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 32,
+                            "end": 33,
+                            "content": ".",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 33,
+                            "end": 44,
+                            "content": "pipeThrough",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 44,
+                            "end": 45,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 45,
+                            "end": 48,
+                            "content": "new",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 49,
+                            "end": 66,
+                            "content": "TextDecoderStream",
+                            "highlight": "type"
+                        },
+                        {
+                            "start": 66,
+                            "end": 67,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 67,
+                            "end": 68,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 68,
+                            "end": 69,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 70,
+                            "end": 79,
+                            "content": "getReader",
+                            "highlight": "normal"
+                        }
+                    ]
+                },
+                "rhs": {
+                    "line_number": 44,
+                    "changes": [
+                        {
+                            "start": 4,
+                            "end": 11,
+                            "content": "console",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 12,
+                            "end": 19,
+                            "content": "timeEnd",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 20,
+                            "end": 32,
+                            "content": "\"Fetch Time\"",
+                            "highlight": "string"
+                        }
+                    ]
+                }
+            },
+            {
+                "lhs": {
+                    "line_number": 124,
+                    "changes": [
+                        {
+                            "start": 12,
+                            "end": 14,
+                            "content": "if",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 15,
+                            "end": 16,
+                            "content": "(",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 16,
+                            "end": 21,
+                            "content": "value",
+                            "highlight": "normal"
+                        },
+                        {
+                            "start": 22,
+                            "end": 25,
+                            "content": "!==",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 26,
+                            "end": 35,
+                            "content": "undefined",
+                            "highlight": "keyword"
+                        },
+                        {
+                            "start": 35,
+                            "end": 36,
+                            "content": ")",
+                            "highlight": "delimiter"
+                        },
+                        {
+                            "start": 37,
+                            "end": 38,
+                            "content": "{",
+                            "highlight": "delimiter"
+                        }
+                    ]
+                }
+            }
+        ]
+    ],
+    "language": "TypeScript",
+    "path": "./src/bin/testing_something_else.ts",
+    "status": "changed"
+}
