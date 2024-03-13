@@ -184,7 +184,7 @@ impl LLMClient for FireworksAIClient {
             .eventsource();
 
         let mut buffered_string = "".to_owned();
-        while let Some(event) = dbg!(response_stream.next().await) {
+        while let Some(event) = response_stream.next().await {
             match event {
                 Ok(event) => {
                     if &event.data == "[DONE]" {

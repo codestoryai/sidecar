@@ -511,11 +511,11 @@ impl FillInMiddleCompletionAgent {
             let mut stop_words = vec![
                 "\n\n".to_owned(),
                 "```".to_owned(),
-                "<EOT>".to_owned(),
                 "</s>".to_owned(),
                 "<｜end▁of▁sentence｜>".to_owned(),
                 "<｜begin▁of▁sentence｜>".to_owned(),
                 "<step>".to_owned(),
+                "<EOT>".to_owned(),
             ];
             if self.is_multiline {
                 stop_words.push("\n".to_owned());
