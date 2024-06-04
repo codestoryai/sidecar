@@ -25,9 +25,9 @@ async fn main() -> Result<()> {
     let configuration = Configuration::parse();
 
     // Star the qdrant server and make sure that it has started up
-    let qdrant_process = QdrantServerProcess::initialize(&configuration).await?;
+    // let qdrant_process = QdrantServerProcess::initialize(&configuration).await?;
     // HC the process here to make sure that it has started up
-    wait_for_qdrant().await;
+    // wait_for_qdrant().await;
     debug!("qdrant server started");
 
     // We get the logging setup first
@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
             // Drop happens automatically when variables go out of scope.
             debug!("Signal received, cleaning up...");
             // We drop the qdrant process explicitly to not leave anything behind
-            drop(qdrant_process);
+            // drop(qdrant_process);
         }
     }
 

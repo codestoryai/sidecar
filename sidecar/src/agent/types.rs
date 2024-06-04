@@ -983,16 +983,16 @@ impl Agent {
             return Ok(Some(content));
         }
         debug!(%self.reporef, path, %self.session_id, "executing file search");
-        let file_reader = self
-            .application
-            .indexes
-            .file
-            .get_by_path(path, &self.reporef)
-            .await
-            .map(|file_document| file_document.map(|doc| doc.content));
-        if let Ok(Some(_)) = file_reader {
-            return file_reader;
-        }
+        // let file_reader = self
+        //     .application
+        //     .indexes
+        //     .file
+        //     .get_by_path(path, &self.reporef)
+        //     .await
+        //     .map(|file_document| file_document.map(|doc| doc.content));
+        // if let Ok(Some(_)) = file_reader {
+        //     return file_reader;
+        // }
         Ok(None)
     }
 

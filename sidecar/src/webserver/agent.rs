@@ -152,11 +152,11 @@ pub async fn hybrid_search(
         chat_broker,
         reranker,
     );
-    let hybrid_search_results = agent.code_search_hybrid(&query).await.unwrap_or(vec![]);
+    // let hybrid_search_results = agent.code_search_hybrid(&query).await.unwrap_or(vec![]);
     Ok(json(HybridSearchResponse {
         session_id: uuid::Uuid::new_v4(),
         query,
-        code_spans: hybrid_search_results,
+        code_spans: vec![],
     }))
 }
 
@@ -196,30 +196,31 @@ pub async fn explain(
     let user_id = app.user_id.to_owned();
     let posthog_client = app.posthog_client.clone();
     let sql_db = app.sql.clone();
-    let file_content = app
-        .indexes
-        .file
-        .get_by_path(&relative_path, &repo_ref)
-        .await
-        .context("file retrieval failed")?
-        .context("requested file not found")?
-        .content;
+    // let file_content = app
+    //     .indexes
+    //     .file
+    //     .get_by_path(&relative_path, &repo_ref)
+    //     .await
+    //     .context("file retrieval failed")?
+    //     .context("requested file not found")?
+    //     .content;
 
     let mut previous_messages =
         ConversationMessage::load_from_db(app.sql.clone(), &repo_ref, thread_id)
             .await
             .expect("loading from db to never fail");
 
-    let snippet = file_content
-        .lines()
-        .skip(start_line.try_into().expect("conversion_should_not_fail"))
-        .take(
-            (end_line - start_line)
-                .try_into()
-                .expect("conversion_should_not_fail"),
-        )
-        .collect::<Vec<_>>()
-        .join("\n");
+    // let snippet = file_content
+    //     .lines()
+    //     .skip(start_line.try_into().expect("conversion_should_not_fail"))
+    //     .take(
+    //         (end_line - start_line)
+    //             .try_into()
+    //             .expect("conversion_should_not_fail"),
+    //     )
+    //     .collect::<Vec<_>>()
+    //     .join("\n");
+    let snippet = "".to_owned();
 
     let mut conversation_message = ConversationMessage::explain_message(
         thread_id,

@@ -38,8 +38,8 @@ pub struct Application {
     // for the application
     pub config: Arc<Configuration>,
     pub repo_pool: RepositoryPool,
-    pub indexes: Arc<Indexes>,
-    pub semantic_client: Option<SemanticClient>,
+    // pub indexes: Arc<Indexes>,
+    // pub semantic_client: Option<SemanticClient>,
     /// Background & maintenance tasks are executed on a separate
     /// executor
     pub sync_queue: SyncQueue,
@@ -72,7 +72,7 @@ impl Application {
         let sync_queue = SyncQueue::start(config.clone());
         let sql_db = Arc::new(sqlite::init(config.clone()).await?);
         let language_parsing = Arc::new(TSLanguageParsing::init());
-        let semantic_client = SemanticClient::new(config.clone(), language_parsing.clone()).await;
+        // let semantic_client = SemanticClient::new(config.clone(), language_parsing.clone()).await;
         let posthog_client = posthog_client(&config.user_id);
         let llm_broker =
             LLMBroker::new(LLMBrokerConfiguration::new(config.index_dir.clone())).await?;
@@ -87,16 +87,16 @@ impl Application {
         Ok(Self {
             config: config.clone(),
             repo_pool: repo_pool.clone(),
-            semantic_client: semantic_client.clone(),
-            indexes: Indexes::new(
-                repo_pool,
-                sql_db.clone(),
-                semantic_client,
-                config.clone(),
-                language_parsing.clone(),
-            )
-            .await?
-            .into(),
+            // semantic_client: semantic_client.clone(),
+            // indexes: Indexes::new(
+            //     repo_pool,
+            //     sql_db.clone(),
+            //     semantic_client,
+            //     config.clone(),
+            //     language_parsing.clone(),
+            // )
+            // .await?
+            // .into(),
             sync_queue,
             language_parsing,
             sql: sql_db,

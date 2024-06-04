@@ -93,14 +93,14 @@ impl SyncQueue {
                         .await
                     {
                         Ok(_) => {
-                            tokio::task::spawn(async move {
-                                info!(?next.reporef, "starting indexing of repository");
+                            // tokio::task::spawn(async move {
+                            //     info!(?next.reporef, "starting indexing of repository");
 
-                                let result = next.run(permit).await;
-                                _ = active.remove(&next.reporef);
+                            //     let result = next.run(permit).await;
+                            //     _ = active.remove(&next.reporef);
 
-                                debug!(?result, "indexing finished for repository");
-                            });
+                            //     debug!(?result, "indexing finished for repository");
+                            // });
                         }
                         Err((_, next)) => {
                             // this shouldn't happen, but we can handle it gracefully
@@ -553,12 +553,12 @@ impl SyncHandle {
     async fn index(&self) -> Result<Either<SyncStatus, Arc<RepoMetadata>>> {
         use SyncStatus::*;
         let Application {
-            ref indexes,
+            // ref indexes,
             ref repo_pool,
             ..
         } = self.app;
 
-        let writers = indexes.writers().await.map_err(SyncError::Tantivy)?;
+        // let writers = indexes.writers().await.map_err(SyncError::Tantivy)?;
         let repo = {
             let orig = repo_pool
                 .read_async(&self.reporef, |_k, v| v.clone())
@@ -583,7 +583,7 @@ impl SyncHandle {
             }
             _ => {
                 self.set_status(|_| Indexing).unwrap();
-                writers.index(self, &repo).await.map(Either::Right)
+                // writers.index(self, &repo).await.map(Either::Right)
             }
         };
 
@@ -591,24 +591,26 @@ impl SyncHandle {
 
         debug!(?self.reporef, ?time_taken, "indexing finished");
 
-        match indexed {
-            Ok(_) => {
-                debug!("committing index");
-                writers.commit().map_err(SyncError::Tantivy)?;
-                debug!("finished committing index");
-                indexed.map_err(SyncError::Indexing)
-            }
-            // Err(_) if self.pipes.is_removed() => self.delete_repo(&repo, writers).await,
-            Err(_) if self.pipes.is_cancelled() => {
-                writers.rollback().map_err(SyncError::Tantivy)?;
-                debug!(?self.reporef, "index cancelled by user");
-                Err(SyncError::Cancelled)
-            }
-            Err(err) => {
-                writers.rollback().map_err(SyncError::Tantivy)?;
-                Err(SyncError::Indexing(err))
-            }
-        }
+        Err(SyncError::Cancelled)
+        // match indexed {
+        //     Ok(_) => {
+        //         debug!("committing index");
+        //         // writers.commit().map_err(SyncError::Tantivy)?;
+        //         debug!("finished committing index");
+        //         // indexed.map_err(SyncError::Indexing)
+        //         Err(SyncError::Cancelled)
+        //     }
+        //     // Err(_) if self.pipes.is_removed() => self.delete_repo(&repo, writers).await,
+        //     Err(_) if self.pipes.is_cancelled() => {
+        //         // writers.rollback().map_err(SyncError::Tantivy)?;
+        //         debug!(?self.reporef, "index cancelled by user");
+        //         Err(SyncError::Cancelled)
+        //     }
+        //     Err(err) => {
+        //         // writers.rollback().map_err(SyncError::Tantivy)?;
+        //         Err(SyncError::Indexing(err))
+        //     }
+        // }
     }
 
     // async fn delete_repo(
