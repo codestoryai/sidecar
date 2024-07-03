@@ -8,3 +8,4 @@ mod rust;
 pub mod text_document;
 pub mod types;
 mod typescript;
+mod c;

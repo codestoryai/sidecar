@@ -8,16 +8,10 @@ use tree_sitter::Tree;
 use crate::chunking::types::FunctionNodeInformation;
 
 use super::{
-    go::go_language_config,
-    javascript::javascript_language_config,
-    python::python_language_config,
-    rust::rust_language_config,
-    text_document::{Position, Range},
-    types::{
+    c::c_language_config, go::go_language_config, javascript::javascript_language_config, python::python_language_config, rust::rust_language_config, text_document::{Position, Range}, types::{
         ClassInformation, ClassNodeType, ClassWithFunctions, FunctionInformation, FunctionNodeType,
         OutlineNode, OutlineNodeContent, OutlineNodeType, TypeInformation, TypeNodeType,
-    },
-    typescript::typescript_language_config,
+    }, typescript::typescript_language_config
 };
 
 fn naive_chunker(buffer: &str, line_count: usize, overlap: usize) -> Vec<Span> {
@@ -1268,6 +1262,7 @@ impl TSLanguageParsing {
                 rust_language_config(),
                 python_language_config(),
                 go_language_config(),
+                c_language_config(),
             ],
         }
     }
