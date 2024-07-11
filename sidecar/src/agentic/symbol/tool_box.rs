@@ -1600,22 +1600,24 @@ We also believe this symbol needs to be probed because of:
             .for_file_path(symbol_edited.fs_file_path())
             .map(|language_config| language_config.language_str.to_owned())
             .unwrap_or("".to_owned());
-        let symbol_to_edit = self
-            .find_sub_symbol_to_edit_with_name(parent_symbol_name, symbol_edited, request_id)
-            .await?;
+        let symbol_to_edit = dbg!(
+            self.find_sub_symbol_to_edit_with_name(parent_symbol_name, symbol_edited, request_id)
+                .await
+        )?;
         // over here we have to check if its a function or a class
         if symbol_to_edit.is_function_type() {
             // we do need to get the references over here for the function and
             // send them over as followups to check wherever they are being used
-            let references = self
-                .go_to_references(
+            let references = dbg!(
+                self.go_to_references(
                     symbol_edited.fs_file_path(),
                     &symbol_edited.range().start_position(),
                     request_id,
                 )
-                .await?;
-            let _ = self
-                .invoke_followup_on_references(
+                .await
+            )?;
+            let _ = dbg!(
+                self.invoke_followup_on_references(
                     symbol_edited,
                     original_code,
                     &symbol_to_edit,
@@ -1624,14 +1626,15 @@ We also believe this symbol needs to be probed because of:
                     request_id,
                     tool_properties,
                 )
-                .await;
+                .await
+            );
         } else if symbol_to_edit.is_class_definition() {
             // TODO(skcd): Show the AI the changed parts over here between the original
             // code and the changed node and ask it for the symbols which we should go
             // to references for, that way we are able to do the finer garained changes
             // as and when required
-            let _ = self
-                .invoke_references_check_for_class_definition(
+            let _ = dbg!(
+                self.invoke_references_check_for_class_definition(
                     symbol_edited,
                     original_code,
                     &symbol_to_edit,
@@ -1643,7 +1646,8 @@ We also believe this symbol needs to be probed because of:
                     request_id,
                     tool_properties,
                 )
-                .await;
+                .await
+            );
             let references = dbg!(
                 self.go_to_references(
                     symbol_edited.fs_file_path(),
@@ -1671,6 +1675,8 @@ We also believe this symbol needs to be probed because of:
         Ok(())
     }
 
+    // TODO(codestory): This code is not running because it fails on a serde
+    // conversion
     async fn invoke_references_check_for_class_definition(
         &self,
         symbol_edited: &SymbolToEdit,
@@ -1710,10 +1716,11 @@ We also believe this symbol needs to be probed because of:
             .into_iter()
             .map(|(index, line)| (index + start_line, line.to_owned()))
             .collect::<Vec<_>>();
-        let class_memebers_to_follow = self
-            .check_class_members_to_follow(request, request_id)
-            .await?
-            .members();
+        let class_memebers_to_follow = dbg!(
+            self.check_class_members_to_follow(request, request_id)
+                .await
+        )?
+        .members();
         // now we need to get the members and schedule a followup along with the refenreces where
         // we might ber using this class
         // Now we have to get the position of the members which we want to follow-along, this is important
