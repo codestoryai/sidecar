@@ -600,17 +600,23 @@ impl ToolBox {
         let range = sub_symbol.range();
         // we might not have a range here to select from when we are adding a new
         // symbol over here
-        let (_, _, in_selection) = split_file_content_into_parts(&file_contents, range);
-        let selected_code_with_typehints = self
-            .apply_inlay_hints(sub_symbol.fs_file_path(), &in_selection, range, request_id)
-            .await?;
+        let (symbol_to_edit, symbol_to_add) = if sub_symbol.is_new() {
+            (None, Some(sub_symbol.symbol_name().to_owned()))
+        } else {
+            let (_, _, in_selection) = split_file_content_into_parts(&file_contents, range);
+            let selected_code_with_typehints = self
+                .apply_inlay_hints(sub_symbol.fs_file_path(), &in_selection, range, request_id)
+                .await?;
+            (Some(selected_code_with_typehints), None)
+        };
         let user_query = sub_symbol.instructions().join("\n");
         let tool_input = ToolInput::ReRankingCodeSnippetsForEditing(
             ReRankingSnippetsForCodeEditingRequest::new(
                 outline_nodes_for_query.to_vec(),
                 None,
                 None,
-                selected_code_with_typehints,
+                symbol_to_edit,
+                symbol_to_add,
                 sub_symbol.fs_file_path().to_owned(),
                 user_query,
                 LLMProperties::new(

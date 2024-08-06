@@ -10,7 +10,12 @@ use serde_xml_rs::from_str;
 
 use crate::agentic::{
     symbol::identifier::LLMProperties,
-    tool::{errors::ToolError, input::ToolInput, output::ToolOutput, r#type::Tool},
+    tool::{
+        errors::ToolError,
+        input::ToolInput,
+        output::ToolOutput,
+        r#type::{Tool, ToolType},
+    },
 };
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -49,7 +54,8 @@ pub struct ReRankingSnippetsForCodeEditingRequest {
     // over here
     code_above: Option<String>,
     code_below: Option<String>,
-    code_to_edit_selection: String,
+    code_to_edit_selection: Option<String>,
+    code_to_add: Option<String>,
     fs_file_path: String,
     user_query: String,
     llm_properties: LLMProperties,
@@ -61,7 +67,8 @@ impl ReRankingSnippetsForCodeEditingRequest {
         outline_nodes: Vec<ReRankingCodeSnippetSymbolOutline>,
         code_above: Option<String>,
         code_below: Option<String>,
-        code_to_edit_selection: String,
+        code_to_edit_selection: Option<String>,
+        code_to_add: Option<String>,
         fs_file_path: String,
         user_query: String,
         llm_properties: LLMProperties,
@@ -72,6 +79,7 @@ impl ReRankingSnippetsForCodeEditingRequest {
             code_above,
             code_below,
             code_to_edit_selection,
+            code_to_add,
             fs_file_path,
             user_query,
             llm_properties,
@@ -335,10 +343,12 @@ InitialRequestData
         )
     }
 
-    fn user_message(&self, user_context: &ReRankingSnippetsForCodeEditingRequest) -> String {
+    fn user_message(
+        &self,
+        user_context: &ReRankingSnippetsForCodeEditingRequest,
+    ) -> Result<String, ToolError> {
         let query = &user_context.user_query;
         let file_path = &user_context.fs_file_path;
-        let code_interested = &user_context.code_to_edit_selection;
         let code_above = user_context
             .code_above
             .as_ref()
@@ -384,7 +394,30 @@ InitialRequestData
             })
             .collect::<Vec<_>>()
             .join("\n");
-        format!(
+        let code_to_edit = user_context.code_to_edit_selection.as_deref();
+        let code_to_add = user_context.code_to_add.as_deref();
+        let code_to_focus_prompt = match (code_to_edit, code_to_add) {
+            (Some(code_to_edit), None) => {
+                format!(
+                    r#"<code_snippet_to_edit>
+{code_to_edit}
+</code_snippet_to_edit>"#
+                )
+            }
+            (None, Some(code_to_add)) => {
+                format!(
+                    r#"<code_snippet_to_add>
+We want to add this: {code_to_add}
+</code_snippet_to_add>"#
+                )
+            }
+            _ => {
+                return Err(ToolError::WrongToolInput(
+                    ToolType::ReRankingCodeSnippetsForCodeEditingContext,
+                ));
+            }
+        };
+        Ok(format!(
             r#"<user_query>
 {query}
 </user_query>
@@ -395,14 +428,12 @@ InitialRequestData
 
 {code_above}
 {code_below}
-<code_snippet_to_edit>
-{code_interested}
-</code_snippet_to_edit>
+{code_to_focus_prompt}
 
 <code_symbol_outline_list>
 {outline_nodes}
 </code_symbol_outline_list>"#
-        )
+        ))
     }
 }
 
@@ -413,7 +444,7 @@ impl Tool for ReRankingSnippetsForCodeEditingContext {
         let root_request_id = context.root_request_id.to_owned();
         let llm_properties = context.llm_properties.clone();
         let system_message = LLMClientMessage::system(self.system_message());
-        let user_message = LLMClientMessage::user(self.user_message(&context));
+        let user_message = LLMClientMessage::user(self.user_message(&context)?);
         let llm_request = LLMClientCompletionRequest::new(
             llm_properties.llm().clone(),
             vec![system_message, user_message],
