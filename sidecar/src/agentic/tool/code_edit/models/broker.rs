@@ -105,6 +105,10 @@ impl CodeEditBroker {
             LLMType::Gpt4_32k,
             Box::new(AnthropicCodeEditFromatter::new()),
         );
+        models.insert(
+            LLMType::Llama3_1_8bInstruct,
+            Box::new(AnthropicCodeEditFromatter::new()),
+        );
         Self { models }
     }
 

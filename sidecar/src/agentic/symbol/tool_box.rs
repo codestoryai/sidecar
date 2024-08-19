@@ -2014,6 +2014,8 @@ We also believe this symbol needs to be probed because of:
         message_properties: SymbolEventMessageProperties,
         tool_properties: &ToolProperties,
     ) -> Result<(), SymbolError> {
+        // very early return over here for now
+        return Ok(());
         println!(
             "tool_box::check_for_followups::start::symbol({})",
             parent_symbol_name
@@ -6403,7 +6405,7 @@ FILEPATH: {fs_file_path}
                                         vec![user_query.to_owned()],
                                         false,
                                         false,
-                                        false,
+                                        false, // is full edit is set to false
                                         user_query.to_owned(),
                                         None,
                                     ))

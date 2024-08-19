@@ -336,6 +336,7 @@ impl Tool for CodeEditingTool {
                         }
                     }
                     edits_response = edits_receiver.recv() => {
+                        println!("edits_response::{:?}", &edits_response);
                         if should_stream {
                             match edits_response {
                                 Some(CodeBlockEditDelta::EditStarted) => {
@@ -405,6 +406,7 @@ impl Tool for CodeEditingTool {
     }
 }
 
+#[derive(Debug)]
 enum CodeBlockEditDelta {
     EditStarted,
     EditDelta(String),
@@ -437,6 +439,7 @@ impl CodeToAddAccumulator {
 
     fn add_delta(&mut self, delta: String) {
         self.answer_up_until_now.push_str(&delta);
+        println!("answer_up_until_now::({})", &self.answer_up_until_now);
         self.process_answer();
     }
 

@@ -11,7 +11,7 @@ use derivative::Derivative;
 use futures::{future::Shared, stream, FutureExt, StreamExt};
 use llm_client::{
     clients::types::LLMType,
-    provider::{GoogleAIStudioKey, LLMProvider, LLMProviderAPIKeys},
+    provider::{FireworksAPIKey, GoogleAIStudioKey, LLMProvider, LLMProviderAPIKeys},
 };
 use logging::parea::{PareaClient, PareaLogEvent};
 use tokio::sync::{
@@ -1787,7 +1787,7 @@ Satisfy the requirement either by making edits or gathering the required informa
             )
             .await?;
         let content = symbol_to_edit.content().to_owned();
-        let (llm_properties, swe_bench_initial_edit) =
+        let (mut llm_properties, swe_bench_initial_edit) =
             if let Some(llm_properties) = self.tool_properties.get_swe_bench_code_editing_llm() {
                 // if the symbol is extremely long which we want to edit, fallback
                 // to an llm with a bigger context window, in this case we use gpt4-32k
@@ -1805,6 +1805,13 @@ Satisfy the requirement either by making edits or gathering the required informa
             } else {
                 (self.llm_properties.clone(), false)
             };
+        llm_properties = LLMProperties::new(
+            LLMType::GeminiProFlash,
+            LLMProvider::GoogleAIStudio,
+            LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new(
+                "AIzaSyCMkKfNkmjF8rTOWMg53NiYmz0Zv6xbfsE".to_owned(),
+            )),
+        );
         let file_content = self
             .tools
             .file_open(
@@ -1868,26 +1875,27 @@ Satisfy the requirement either by making edits or gathering the required informa
                 sub_symbol_to_edit.is_new(),
             );
 
-            let context_for_editing = if sub_symbol_to_edit.is_new() {
-                self.grab_context_for_editing_faster(
-                    &sub_symbol_to_edit,
-                    message_properties.clone(),
-                )
-                .await?
-            } else {
-                if sub_symbol_to_edit.is_full_edit() {
-                    // TODO(skcd): Limit this so we are fast enough over here, do something
-                    // anything about this on the fast path
-                    self.grab_context_for_editing_faster(
-                        &sub_symbol_to_edit,
-                        message_properties.clone(),
-                    )
-                    .await?
-                } else {
-                    self.grab_context_for_editing(&sub_symbol_to_edit, message_properties.clone())
-                        .await?
-                }
-            };
+            // let context_for_editing = if sub_symbol_to_edit.is_new() {
+            //     self.grab_context_for_editing_faster(
+            //         &sub_symbol_to_edit,
+            //         message_properties.clone(),
+            //     )
+            //     .await?
+            // } else {
+            //     if sub_symbol_to_edit.is_full_edit() {
+            //         // TODO(skcd): Limit this so we are fast enough over here, do something
+            //         // anything about this on the fast path
+            //         self.grab_context_for_editing_faster(
+            //             &sub_symbol_to_edit,
+            //             message_properties.clone(),
+            //         )
+            //         .await?
+            //     } else {
+            //         self.grab_context_for_editing(&sub_symbol_to_edit, message_properties.clone())
+            //             .await?
+            //     }
+            // };
+            let context_for_editing = vec![];
 
             // if this is a new sub-symbol we have to create we have to diverge the
             // implementations a bit or figure out how to edit with a new line added

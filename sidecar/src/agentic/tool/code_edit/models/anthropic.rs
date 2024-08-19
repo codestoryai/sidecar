@@ -120,6 +120,7 @@ Your reply:
 The user instruction requires us to print the parameters for the function. I can use the print function in python to do so.
 </thinking>
 <code_edited>
+```python
     def add(a, b):
         print(a, b)
         return a + b
@@ -128,6 +129,7 @@ The user instruction requires us to print the parameters for the function. I can
     def multiply(a, b):
         print(a, b)
         return a + b
+```
 </code_edited>
 </reply>
 
@@ -397,6 +399,7 @@ Your reply:
 The user instruction requires us to print the parameters for the function. I can use the print function in python to do so.
 </thinking>
 <code_edited>
+```python
     def add(a, b):
         print(a, b)
         return a + b
@@ -405,6 +408,7 @@ The user instruction requires us to print the parameters for the function. I can
     def multiply(a, b):
         print(a, b)
         return a + b
+```
 </code_edited>
 </reply>
 
