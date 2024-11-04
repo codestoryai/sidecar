@@ -493,9 +493,10 @@ impl SessionService {
         &self,
         exchange_id: &str,
         step_index: Option<usize>,
+        tool_box: Arc<ToolBox>,
         accepted: bool,
         storage_path: String,
-        message_properties: SymbolEventMessageProperties,
+        mut message_properties: SymbolEventMessageProperties,
     ) -> Result<(), SymbolError> {
         let session_maybe = self.load_from_storage(storage_path.to_owned()).await;
         if session_maybe.is_err() {
@@ -503,8 +504,29 @@ impl SessionService {
         }
         let mut session = session_maybe.expect("is_err to hold above");
         session = session
-            .react_to_feedback(exchange_id, step_index, accepted, message_properties)
+            .react_to_feedback(
+                exchange_id,
+                step_index,
+                accepted,
+                message_properties.clone(),
+            )
             .await?;
+
+        // this is a hack
+        if accepted {
+            let new_exchange = tool_box
+                .create_new_exchange(session.session_id().to_owned(), message_properties.clone())
+                .await?;
+            message_properties = message_properties.set_request_id(new_exchange.to_owned());
+            let _ = message_properties
+                .ui_sender()
+                .send(UIEventWithID::chat_event(
+                    session.session_id().to_owned(),
+                    new_exchange,
+                    "".to_owned(),
+                    Some("user clicked accepted".to_owned()),
+                ));
+        }
         self.save_to_storage(&session).await?;
         Ok(())
     }

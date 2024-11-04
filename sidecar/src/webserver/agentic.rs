@@ -1334,6 +1334,7 @@ pub async fn user_feedback_on_exchange(
             .feedback_for_exchange(
                 &exchange_id,
                 step_index,
+                app.tool_box,
                 accepted,
                 session_storage_path,
                 message_properties,

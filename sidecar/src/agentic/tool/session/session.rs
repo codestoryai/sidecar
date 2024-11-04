@@ -507,6 +507,10 @@ impl Session {
         }
     }
 
+    pub fn session_id(&self) -> &str {
+        &self.session_id
+    }
+
     pub fn storage_path(&self) -> &str {
         &self.storage_path
     }
