@@ -527,6 +527,14 @@ impl SessionService {
             let session_chat_message = last_exchange.to_conversation_message().await;
             let last_message = session_chat_message.message();
 
+            let last_file = session.find_last_edited_file();
+
+            let Some(last_file) = session.find_last_edited_file() else {
+                return Ok(());
+            };
+
+            dbg!(&last_file);
+
             let _ = message_properties
                 .ui_sender()
                 .send(UIEventWithID::chat_event(

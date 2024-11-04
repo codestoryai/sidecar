@@ -399,6 +399,7 @@ impl Exchange {
                         }
                     }
                     ExchangeReplyAgent::Plan(plan_reply) => {
+                        dbg!(&plan_reply);
                         if plan_reply.plan_discarded {
                             SessionChatMessage::assistant(
                                 "The Plan I came up with was REJECTED by the user".to_owned(),
@@ -505,6 +506,61 @@ impl Session {
             storage_path,
             global_running_user_context,
         }
+    }
+
+    pub fn find_last_edited_file(&self) -> Option<String> {
+        let mut last_edited_file: Option<String> = None;
+
+        // Iterate through exchanges in reverse order (newest to oldest)
+        for exchange in self.exchanges.iter().rev() {
+            // Check if the exchange is an agent reply (contains edits or plans)
+            match &exchange.exchange_type {
+                ExchangeType::AgentChat(agent_exchange) => {
+                    // Check the type of agent reply
+                    match &agent_exchange.reply {
+                        ExchangeReplyAgent::Plan(plan_reply) => {
+                            // Iterate through plan steps in reverse order (last step to first)
+                            for step in plan_reply.plan_steps.iter().rev() {
+                                // Check if the step contains a file to edit
+                                if let Some(file) = step.file_to_edit() {
+                                    // Found a file edited in this step. This is the latest so far.
+                                    last_edited_file = Some(file.to_owned());
+                                    // Break the inner loop, no need to look at earlier steps in this plan
+                                    break;
+                                }
+                            }
+                        }
+                        ExchangeReplyAgent::Edit(edit_reply) => {
+                            // Only consider accepted edits as they result in actual file changes
+                            if edit_reply.accepted {
+                                // Parse the diff to identify the edited file
+                                // *** IMPORTANT: Adapt this to your diff format ***
+                                // Example: assuming diff starts with "file: <filepath>"
+                                if let Some(file_prefix) =
+                                    edit_reply.edits_made_diff.strip_prefix("file: ")
+                                {
+                                    if let Some(filepath) = file_prefix.split_whitespace().next() {
+                                        // Found the edited file from the diff
+                                        last_edited_file = Some(filepath.to_owned());
+                                        // Break the inner loop, as we've found the last edited file
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        _ => {} // Ignore chat replies (they don't contain file edits)
+                    }
+                }
+                _ => {} // Ignore human exchanges (they don't contain edits)
+            }
+            // If we've found a file in this exchange, it's the last edited one,
+            // so break the outer loop as well.
+            if last_edited_file.is_some() {
+                break;
+            }
+        }
+
+        last_edited_file
     }
 
     pub fn session_id(&self) -> &str {
