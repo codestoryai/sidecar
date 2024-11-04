@@ -28,6 +28,10 @@ impl PlanStep {
         }
     }
 
+    pub fn to_string(&self) -> String {
+        format!("Title: {}\nDescription: {}", self.title, self.description)
+    }
+
     pub fn title(&self) -> &str {
         &self.title
     }

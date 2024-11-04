@@ -617,6 +617,10 @@ impl Session {
         self
     }
 
+    pub fn user_context(&self) -> &UserContext {
+        &self.global_running_user_context
+    }
+
     pub fn plan(
         mut self,
         exchange_id: String,

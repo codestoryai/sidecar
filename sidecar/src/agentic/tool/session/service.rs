@@ -541,7 +541,86 @@ impl SessionService {
 
             let Ok(diags) = diags else { return Ok(()) };
 
-            dbg!(&diags);
+            let hacked_prompt =
+                "You to strictly propose just one step, based on the provided LSP diagnostics";
+
+            let user_query = diags
+                .iter()
+                .enumerate()
+                .map(|(index, error)| {
+                    format!(
+                        r#"Prompt: {}
+---
+{}.
+### Snippet:
+{}
+### Diagnostic:
+{}
+### Files Affected:
+{}
+### Quick fixes:
+{}
+### Parameter hints:
+{}
+### Additional symbol outlines:
+{}"#,
+                        hacked_prompt,
+                        index,
+                        error.snippet(),
+                        error.diagnostic_message(),
+                        error.associated_files().map_or_else(
+                            || String::from("Only this file."),
+                            |files| files.join(", ")
+                        ),
+                        error
+                            .quick_fix_labels()
+                            .as_ref()
+                            .map_or_else(|| String::from("None"), |labels| labels.join("\n")),
+                        error
+                            .parameter_hints()
+                            .as_ref()
+                            .map_or_else(|| String::from("None"), |labels| labels.join("\n")),
+                        error.user_variables().map_or_else(
+                            || String::from("None"),
+                            |user_variables| { user_variables.join("\n") },
+                        )
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n\n");
+
+            dbg!(&user_query);
+            // populate accordingly
+            let previous_queries = vec![];
+            let previous_messages = vec![];
+
+            let user_context = session.user_context();
+
+            // as this is slow
+            let is_deep_reasoning = false;
+
+            // can add streaming later
+            let step_sender = None;
+
+            // fk me but this step implicitly saves the plan...thus overwriting...
+            let plan_steps = tool_box
+                .generate_plan(
+                    &user_query,
+                    previous_queries,
+                    user_context,
+                    previous_messages,
+                    is_deep_reasoning,
+                    step_sender,
+                    message_properties.clone(),
+                )
+                .await?;
+
+            // just use the first one for simplicity
+            let Some(first_step) = plan_steps.first() else {
+                return Ok(());
+            };
+
+            let proposed_step_string = first_step.to_string();
 
             let _ = message_properties
                 .ui_sender()
@@ -549,7 +628,7 @@ impl SessionService {
                     session.session_id().to_owned(),
                     new_exchange,
                     "".to_owned(),
-                    Some(format!("last edited file: {}", &last_file).to_owned()),
+                    Some(format!("Having analyzed your diagnostic errors, I propose the following change in {}: \n{}", &last_file, &proposed_step_string).to_owned()),
                 ));
         }
         self.save_to_storage(&session).await?;
