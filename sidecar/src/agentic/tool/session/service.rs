@@ -525,15 +525,23 @@ impl SessionService {
             };
 
             let session_chat_message = last_exchange.to_conversation_message().await;
-            let last_message = session_chat_message.message();
-
-            let last_file = session.find_last_edited_file();
+            let _last_message = session_chat_message.message();
 
             let Some(last_file) = session.find_last_edited_file() else {
                 return Ok(());
             };
 
-            dbg!(&last_file);
+            let diags = tool_box
+                .get_lsp_diagnostics_for_files(
+                    vec![last_file.clone()],
+                    message_properties.clone(),
+                    true,
+                )
+                .await;
+
+            let Ok(diags) = diags else { return Ok(()) };
+
+            dbg!(&diags);
 
             let _ = message_properties
                 .ui_sender()
@@ -541,7 +549,7 @@ impl SessionService {
                     session.session_id().to_owned(),
                     new_exchange,
                     "".to_owned(),
-                    Some(format!("Your last message: {}", last_message).to_owned()),
+                    Some(format!("last edited file: {}", &last_file).to_owned()),
                 ));
         }
         self.save_to_storage(&session).await?;
