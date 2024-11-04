@@ -371,7 +371,7 @@ impl Exchange {
     ///
     /// We can have consecutive human messages now on every API so this is no
     /// longer a big worry
-    async fn to_conversation_message(&self) -> SessionChatMessage {
+    pub async fn to_conversation_message(&self) -> SessionChatMessage {
         match &self.exchange_type {
             ExchangeType::HumanChat(ref chat_message) => {
                 // TODO(skcd): Figure out caching etc later on
@@ -658,7 +658,7 @@ impl Session {
         self
     }
 
-    fn last_exchange(&self) -> Option<&Exchange> {
+    pub fn last_exchange(&self) -> Option<&Exchange> {
         self.exchanges.last()
     }
 

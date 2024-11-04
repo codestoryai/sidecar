@@ -518,13 +518,22 @@ impl SessionService {
                 .create_new_exchange(session.session_id().to_owned(), message_properties.clone())
                 .await?;
             message_properties = message_properties.set_request_id(new_exchange.to_owned());
+
+            let last_exchange = match session.last_exchange() {
+                Some(x) => x,
+                None => return Ok(()),
+            };
+
+            let session_chat_message = last_exchange.to_conversation_message().await;
+            let last_message = session_chat_message.message();
+
             let _ = message_properties
                 .ui_sender()
                 .send(UIEventWithID::chat_event(
                     session.session_id().to_owned(),
                     new_exchange,
                     "".to_owned(),
-                    Some("user clicked accepted".to_owned()),
+                    Some(format!("Your last message: {}", last_message).to_owned()),
                 ));
         }
         self.save_to_storage(&session).await?;
