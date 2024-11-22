@@ -65,6 +65,10 @@ impl SessionChatMessage {
     pub fn role(&self) -> &SessionChatRole {
         &self.role
     }
+
+    pub fn is_assistant(&self) -> bool {
+        matches!(&self.role, &SessionChatRole::Assistant)
+    }
 }
 
 #[derive(Debug, Clone)]

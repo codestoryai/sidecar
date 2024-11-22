@@ -6,7 +6,7 @@ use std::time::Instant;
 use futures::{stream, StreamExt};
 use llm_client::clients::types::LLMType;
 use llm_client::provider::{
-    AnthropicAPIKey, FireworksAPIKey, GoogleAIStudioKey, LLMProvider, LLMProviderAPIKeys
+    AnthropicAPIKey, FireworksAPIKey, GoogleAIStudioKey, LLMProvider, LLMProviderAPIKeys,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -105,12 +105,13 @@ use crate::agentic::tool::plan::add_steps::PlanAddRequest;
 use crate::agentic::tool::plan::generator::{StepGeneratorRequest, StepSenderEvent};
 use crate::agentic::tool::plan::plan_step::PlanStep;
 use crate::agentic::tool::plan::reasoning::ReasoningRequest;
-use crate::agentic::tool::session::chat::SessionChatMessage;
-use crate::agentic::tool::terminal::terminal::{TerminalInput, TerminalOutput};
 use crate::agentic::tool::r#type::Tool;
 use crate::agentic::tool::ref_filter::ref_filter::ReferenceFilterRequest;
+use crate::agentic::tool::session::chat::SessionChatMessage;
 use crate::agentic::tool::session::exchange::SessionExchangeNewRequest;
 use crate::agentic::tool::swe_bench::test_tool::{SWEBenchTestRepsonse, SWEBenchTestRequest};
+use crate::agentic::tool::terminal::terminal::{TerminalInput, TerminalOutput};
+use crate::agentic::tool::test_runner::runner::{TestRunnerRequest, TestRunnerResponse};
 use crate::chunking::editor_parsing::EditorParsing;
 use crate::chunking::text_document::{Position, Range};
 use crate::chunking::types::{OutlineNode, OutlineNodeContent};
@@ -2171,11 +2172,17 @@ We also believe this symbol needs to be probed because of:
                         // File range: [S........................E]
                         // Our range : [...........S...........E..]
                         let outline_node_content = selected_outline_node.1.consume_content();
-                        if outline_node_content.range().contains_check_line(symbol_to_edit.range()) {
+                        if outline_node_content
+                            .range()
+                            .contains_check_line(symbol_to_edit.range())
+                        {
                             println!("selection_range_selected::{:?}", &symbol_to_edit.range());
                             Ok(outline_node_content.set_range(symbol_to_edit.range().clone()))
                         } else {
-                            println!("selection_range_selected_not_selected::{:?})", &outline_node_content.range());
+                            println!(
+                                "selection_range_selected_not_selected::{:?})",
+                                &outline_node_content.range()
+                            );
                             Ok(outline_node_content)
                         }
                     } else {
@@ -5547,7 +5554,10 @@ FILEPATH: {fs_file_path}
         );
 
         let updated_code = response.updated_code();
-        println!("search_and_replacing::code_editing_lines::({})", updated_code.lines().into_iter().collect::<Vec<_>>().len());
+        println!(
+            "search_and_replacing::code_editing_lines::({})",
+            updated_code.lines().into_iter().collect::<Vec<_>>().len()
+        );
 
         println!(
             "tool_box::search_and_replace::finish::symbol_name({})",
@@ -5584,7 +5594,7 @@ FILEPATH: {fs_file_path}
             .unwrap_or("".to_owned());
         let (above, below, in_range_selection) =
             split_file_content_into_parts(file_content, selection_range);
-        
+
         let new_symbols_edited = symbol_edited_list.map(|symbol_list| {
             symbol_list
                 .into_iter()
@@ -5905,6 +5915,23 @@ FILEPATH: {fs_file_path}
             .await
             .map_err(|e| SymbolError::ToolError(e))?
             .get_lsp_diagnostics()
+            .ok_or(SymbolError::WrongToolOutput)
+    }
+
+    pub async fn run_tests(
+        &self,
+        fs_file_paths: Vec<String>,
+        message_properties: SymbolEventMessageProperties,
+    ) -> Result<TestRunnerResponse, SymbolError> {
+        let input = ToolInput::RunTests(TestRunnerRequest::new(
+            fs_file_paths,
+            message_properties.editor_url(),
+        ));
+        self.tools
+            .invoke(input)
+            .await
+            .map_err(|e| SymbolError::ToolError(e))?
+            .get_test_runner()
             .ok_or(SymbolError::WrongToolOutput)
     }
 
@@ -6638,9 +6665,7 @@ FILEPATH: {fs_file_path}
             LLMProperties::new(
                 LLMType::GeminiProFlash,
                 LLMProvider::GoogleAIStudio,
-                LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new(
-                    "".to_owned(),
-                )),
+                LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new("".to_owned())),
             ),
             message_properties.root_request_id().to_owned(),
         ));
@@ -10274,9 +10299,20 @@ FILEPATH: {fs_file_path}
         Ok(response.is_success())
     }
 
-    pub async fn grab_pending_subprocess_output(&self, message_properties: SymbolEventMessageProperties) -> Result<Option<String>, SymbolError> {
-        let tool_input = ToolInput::SubProcessSpawnedPendingOutput(SubProcessSpawnedPendingOutputRequest::with_editor_url(message_properties.editor_url()));
-        let response = self.tools.invoke(tool_input).await.map_err(|e| SymbolError::ToolError(e))?.get_pending_spawned_process_output().ok_or(SymbolError::WrongToolOutput)?;
+    pub async fn grab_pending_subprocess_output(
+        &self,
+        message_properties: SymbolEventMessageProperties,
+    ) -> Result<Option<String>, SymbolError> {
+        let tool_input = ToolInput::SubProcessSpawnedPendingOutput(
+            SubProcessSpawnedPendingOutputRequest::with_editor_url(message_properties.editor_url()),
+        );
+        let response = self
+            .tools
+            .invoke(tool_input)
+            .await
+            .map_err(|e| SymbolError::ToolError(e))?
+            .get_pending_spawned_process_output()
+            .ok_or(SymbolError::WrongToolOutput)?;
         Ok(response.output())
     }
 }

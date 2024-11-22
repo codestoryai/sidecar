@@ -223,7 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let message_properties = SymbolEventMessageProperties::new(
         SymbolEventRequestId::new(
             initial_exchange_id.to_string().to_owned(),
-            run_id.to_string(),
+            session_id.to_string(),
         ),
         sender.clone(),
         editor_url,
@@ -233,24 +233,62 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let session_service = SessionService::new(tool_box.clone(), symbol_manager);
     println!("session_service::tool_use_agentic_swe_bench");
-    // generate tests to test out the code gen output
-    let _ = session_service
-        .tool_use_agentic_swe_bench(
-            session_id,
-            storage_path,
-            repo_name,
-            input_parts.instance.problem_statement.to_owned(),
-            initial_exchange_id.to_string(),
-            vec![],
-            vec![],
-            "bash".to_owned(),
-            vec![],
-            RepoRef::local(&input_parts.git_drname).expect("to work"),
-            input_parts.git_drname.to_owned(),
-            tool_box,
-            llm_broker,
-            message_properties,
-        )
-        .await;
+    let mut trajectory_tries = 0;
+    // change this as required honestly
+    let test_files = vec!["tests/queries/test_qs_combinators.py".to_owned()];
+
+    loop {
+        // generate tests to test out the code gen output
+        trajectory_tries = trajectory_tries + 1;
+        if trajectory_tries > 5 {
+            break;
+        }
+        let _ = session_service
+            .tool_use_agentic_swe_bench(
+                session_id.to_owned(),
+                storage_path.to_owned(),
+                repo_name.to_owned(),
+                input_parts.instance.problem_statement.to_owned(),
+                initial_exchange_id.to_string(),
+                vec![],
+                vec![],
+                "bash".to_owned(),
+                vec![],
+                RepoRef::local(&input_parts.git_drname).expect("to work"),
+                input_parts.git_drname.to_owned(),
+                tool_box.clone(),
+                llm_broker.clone(),
+                message_properties.clone(),
+            )
+            .await;
+
+        // we can critique and provide feedback to the approach the agent took over here
+        // this will allow us to stop the agent from making the same mistakes again and again
+        // - first get the git-diff which we have generated over here after making our edits
+        // - run the test which we know for sure will lead to insights over here
+        // - get the trajectory the agent followed
+        // - critique and catch the failure hypothesis over we can give that feedback
+        // to the agent so it does not repeat the same mistakes again
+        let git_diff_changes = tool_box
+            .use_terminal_command("git diff", message_properties.clone())
+            .await
+            .expect("harness to not fail for git-diff");
+        let test_output = tool_box
+            .run_tests(test_files.to_vec(), message_properties.clone())
+            .await
+            .expect("harness to run the test");
+        // exit code == 0 implies success, no test failures
+        if test_output.exit_code() == 0 {
+            break;
+        }
+        let trajectory = session_service
+            .get_agent_trajectory(storage_path.to_owned(), tool_box.clone())
+            .await
+            .expect("trajectory to be always present");
+
+        // now given these set of inputs we run our feedback agent whose job is to look
+        // at the test output and the trajectory we took and figure out the limitations
+        // of the current approach
+    }
     Ok(())
 }

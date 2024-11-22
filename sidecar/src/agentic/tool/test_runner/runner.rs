@@ -42,6 +42,8 @@ impl Tool for TestRunner {
         let editor_endpoint = request.editor_url.to_owned() + "/run_tests";
         println!("{:?}", editor_endpoint);
 
+        // TODO: move reqwest client creation to new, this is expensive to create
+        // all the time
         let client = reqwest::Client::new();
         let response = client
             .post(editor_endpoint)

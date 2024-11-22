@@ -42,9 +42,7 @@ impl GoogleStudioLLM {
         Self {
             model: LLMType::GeminiProFlash,
             provider: LLMProvider::GoogleAIStudio,
-            api_keys: LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new(
-                "".to_owned(),
-            )),
+            api_keys: LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new("".to_owned())),
             _root_directory: root_directory,
             root_request_id,
             client,

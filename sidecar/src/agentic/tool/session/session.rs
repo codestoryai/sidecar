@@ -2136,6 +2136,7 @@ The Github Issue we are trying to solve is:
         should_stream_edits: bool,
         tool_agent: ToolUseAgent,
         original_user_message: String,
+        _is_swe_bench_run: bool,
         mut message_properties: SymbolEventMessageProperties,
     ) -> Result<Self, SymbolError> {
         // we want to send a new event only when we are not going to ask for the followup questions
@@ -2664,6 +2665,31 @@ This is part of the file which might not contain the method in full, if thats th
             }
         }
         Ok(self)
+    }
+
+    /// Converts the exchanges and everything else to a trajectory
+    /// This also helps us understand whats happening with the agent
+    /// This uniquely only keeps track of the exchanges which have an agent
+    /// reply and nothing else
+    pub async fn to_trajectory(&self, tool_box: Arc<ToolBox>) -> Vec<String> {
+        let mut converted_messages = vec![];
+        for previous_message in self.exchanges.iter() {
+            converted_messages.push(
+                previous_message
+                    .to_conversation_message(tool_box.tools().clone())
+                    .await,
+            );
+        }
+        converted_messages
+            .into_iter()
+            .filter_map(|conversation_message| {
+                if conversation_message.is_assistant() {
+                    Some(conversation_message.message().to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     async fn save_to_storage(&self) -> Result<(), SymbolError> {

@@ -346,6 +346,17 @@ impl SessionService {
         Ok(())
     }
 
+    /// Grabs the trajectory which the agent followed while working on its
+    /// task
+    pub async fn get_agent_trajectory(
+        &self,
+        storage_path: String,
+        tool_box: Arc<ToolBox>,
+    ) -> Result<Vec<String>, SymbolError> {
+        let session = self.load_from_storage(storage_path.to_owned()).await?;
+        Ok(session.to_trajectory(tool_box).await)
+    }
+
     /// TODO(skcd): Pick up the integration from here for the tool use
     pub async fn tool_use_agentic_swe_bench(
         &self,
@@ -463,6 +474,7 @@ impl SessionService {
                             false,
                             tool_agent.clone(),
                             user_message.to_owned(),
+                            true,
                             message_properties.clone(),
                         )
                         .await;
@@ -621,6 +633,7 @@ impl SessionService {
                             true,
                             tool_agent.clone(),
                             user_message.to_owned(),
+                            false, // not running in swe-bench mode
                             message_properties.clone(),
                         )
                         .await?;

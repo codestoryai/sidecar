@@ -44,9 +44,7 @@ async fn main() {
         LLMProperties::new(
             LLMType::GeminiPro,
             LLMProvider::GoogleAIStudio,
-            LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new(
-                "".to_owned(),
-            )),
+            LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new("".to_owned())),
         ),
     ));
 

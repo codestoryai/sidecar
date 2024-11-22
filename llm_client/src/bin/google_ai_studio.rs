@@ -8,9 +8,7 @@ use llm_client::{
 
 #[tokio::main]
 async fn main() {
-    let api_key = LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new(
-        "".to_owned(),
-    ));
+    let api_key = LLMProviderAPIKeys::GoogleAIStudio(GoogleAIStudioKey::new("".to_owned()));
     let request = LLMClientCompletionRequest::from_messages(
         vec![
             LLMClientMessage::system("You are an expert at saying hi to me".to_owned()),
