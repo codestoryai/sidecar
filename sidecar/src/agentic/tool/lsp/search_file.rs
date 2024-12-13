@@ -50,70 +50,7 @@ struct SearchResult {
     after_context: Vec<String>,
 }
 
-impl SearchResult {
-    fn format_results(results: Vec<Self>, directory_path: String) -> String {
-        use std::collections::HashMap;
-
-        let mut grouped_results: HashMap<PathBuf, Vec<&SearchResult>> = HashMap::new();
-        let mut output = String::new();
-
-        if results.len() >= MAX_RESULTS {
-            output.push_str(&format!(
-                "Showing first {} of {}+ results. Use a more specific search if necessary.\n\n",
-                MAX_RESULTS, MAX_RESULTS
-            ));
-        } else {
-            output.push_str(&format!(
-                "Found {}.\n\n",
-                if results.len() == 1 {
-                    "1 result".to_string()
-                } else {
-                    format!("{} results", results.len())
-                }
-            ));
-        }
-
-        for result in results.iter().take(MAX_RESULTS) {
-            let file_path = Path::new(&result.file);
-            let directory_path = Path::new(&directory_path);
-            let directory_path = directory_path.join(file_path);
-            grouped_results
-                .entry(directory_path)
-                .or_default()
-                .push(result);
-        }
-
-        for (file_path, file_results) in grouped_results {
-            output.push_str(&format!(
-                "{}\n│----\n",
-                file_path
-                    .as_os_str()
-                    .to_str()
-                    .expect("file_formatting to work unless something horrendou happens to the underlying OS")
-            ));
-
-            for (index, result) in file_results.iter().enumerate() {
-                let all_lines = result
-                    .before_context
-                    .iter()
-                    .chain(std::iter::once(&result.match_line))
-                    .chain(result.after_context.iter());
-
-                for line in all_lines {
-                    output.push_str(&format!("│{}\n", line.trim_end()));
-                }
-
-                if index < file_results.len() - 1 {
-                    output.push_str("│----\n");
-                }
-            }
-
-            output.push_str("│----\n\n");
-        }
-
-        output.trim_end().to_string()
-    }
-}
+impl SearchResult {}
 
 #[derive(Debug, Clone)]
 pub struct SearchFileContentWithRegexOutput {
@@ -252,22 +189,23 @@ impl Tool for SearchFileContentClient {
         let context = input.is_search_file_content_with_regex()?;
         // first grab the rip-grep path from the editor
         let endpoint = context.editor_url.to_owned() + "/rip_grep_path";
-        let response = self
-            .client
-            .post(endpoint)
-            .send()
-            .await
-            .map_err(|_e| ToolError::ErrorCommunicatingWithEditor)?;
-        let response: EditorRipGrepPath = response
-            .json()
-            .await
-            .map_err(|_e| ToolError::SerdeConversionFailed)?;
+        let rg_path = if let Ok(response) = self.client.post(endpoint).send().await {
+            let response: EditorRipGrepPath = response
+                .json()
+                .await
+                .map_err(|_e| ToolError::SerdeConversionFailed)?;
+            response.rip_grep_path
+        } else {
+            String::from("rg")
+        };
 
-        let binary_path = response.rip_grep_path;
         let regex_pattern = &context.regex_pattern;
-        let file_pattern = &context.file_pattern.unwrap_or("*".to_owned());
+        let file_pattern = &context
+            .file_pattern
+            .filter(|x| x != "null")
+            .unwrap_or("*".to_owned());
         let args = vec![
-            "--json",
+            "--follow",
             // enables lookaround
             "--pcre2",
             "-e",
@@ -285,7 +223,7 @@ impl Tool for SearchFileContentClient {
 
         println!("search_files::args::({:?})", args);
 
-        let mut child = Command::new(binary_path)
+        let mut child = Command::new(rg_path)
             .args(&args)
             .stdout(Stdio::piped())
             // close stdin so rg does not wait for input from the stdin fd
@@ -305,7 +243,7 @@ impl Tool for SearchFileContentClient {
 
         let mut output = String::new();
         let mut line_count = 0;
-        let max_lines = MAX_RESULTS * 5;
+        let max_lines = MAX_RESULTS * 4;
 
         tokio::pin!(reader);
 
@@ -319,64 +257,10 @@ impl Tool for SearchFileContentClient {
         }
 
         let _status = child.wait().await?;
-        // even if there were errors we still want to read from this
-        // if !status.success() {
-        //     return Err(ToolError::OutputStreamNotPresent);
-        // }
-
-        let mut results: Vec<SearchResult> = Vec::new();
-        let mut current_result: Option<SearchResult> = None;
-
-        for line in output.lines() {
-            if line.trim().is_empty() {
-                continue;
-            }
-            let parsed: RipgrepEvent = match serde_json::from_str(line) {
-                Ok(event) => event,
-                Err(_err) => {
-                    continue;
-                }
-            };
-
-            match parsed {
-                RipgrepEvent::Match {
-                    path,
-                    lines,
-                    line_number,
-                    ..
-                } => {
-                    if let Some(result) = current_result.take() {
-                        results.push(result);
-                    }
-                    current_result = Some(SearchResult {
-                        file: path.text,
-                        line: line_number,
-                        match_line: lines.text,
-                        before_context: Vec::new(),
-                        after_context: Vec::new(),
-                    });
-                }
-                RipgrepEvent::Context {
-                    lines, line_number, ..
-                } => {
-                    if let Some(ref mut result) = current_result {
-                        if line_number < result.line {
-                            result.before_context.push(lines.text);
-                        } else {
-                            result.after_context.push(lines.text);
-                        }
-                    }
-                }
-            }
-        }
-
-        if let Some(result) = current_result {
-            results.push(result);
-        }
 
         Ok(ToolOutput::search_file_content_with_regex(
             SearchFileContentWithRegexOutput {
-                formatted_response: SearchResult::format_results(results, context.directory_path),
+                formatted_response: output,
             },
         ))
     }
