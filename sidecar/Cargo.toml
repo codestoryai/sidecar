@@ -12,19 +12,15 @@ ee = []
 [dependencies]
 mcp_client_rs = "0.1.1"
 async-trait = "0.1.77"
-ndarray = "0.15.6"
 smallvec = { version = "1.11.0", features = ["serde"]}
 tokio = { version = "1.32.0", features = ["full"] }
 tokio-util = "0.7.12"
 scc = { version = "1.8.3", features = ["serde"] }
-tokenizers = { version = "0.13.3", default-features = false, features = ["progressbar", "cli", "onig", "esaxx_fast"] }
 anyhow = "1.0.75"
-thread-priority = "0.13.1"
 serde_json = "1.0.107"
 serde = { version = "1.0.188", features = ["derive"] }
 once_cell = "1.18.0"
 regex = ">= 1.9, < 1.9.5"
-memchr = "2.5.0"
 axum = { version = "0.6.20", features = ["http2", "headers", "macros"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
@@ -39,7 +35,6 @@ tower-http = { version = "0.4.1", features = ["auth", "cors", "catch-panic", "fs
 thiserror = "1.0.49"
 gix = "0.54.1"
 rand = "0.8.5"
-flume = "0.11.0"
 rayon = "1.8.0"
 either = "1.9.0"
 async-stream = "0.3.5"
@@ -50,14 +45,7 @@ tree-sitter = "0.20.10"
 tree-sitter-typescript = "0.20.1"
 tree-sitter-javascript = "0.20.1"
 tree-sitter-rust = "0.20.4"
-git-version = "0.3.5"
-relative-path = "1.9.0"
-notify-debouncer-mini = "0.4.1"
-pest = "2.7.4"
-pest_derive = "2.7.4"
-fuzzy-matcher = "0.3.7"
 uuid = {version = "1.4.1", features = ["serde"] }
-compact_str = "0.7.1"
 async-openai = "0.14.3"
 reqwest = "0.11.22"
 chrono = { version = "0.4.31", features = ["serde"] }
@@ -65,23 +53,13 @@ tiktoken-rs = "0.5.4"
 rake = "0.3.3"
 tokio-stream = "0.1.14"
 tree-sitter-python = "0.20.4"
-floating-distance = "0.3.1"
-str-distance = "0.1.0"
-fancy-regex = "0.12.0"
 petgraph = { version = "0.6.5", default-features = false, features = ["serde-1", "stable_graph"] }
-bincode = "1.3.3"
 tempfile = "3.3.0"
-csv = "1.1"
 
 llm_client = { path = "../llm_client" }
 llm_prompts = { path = "../llm_prompts" }
 logging = { path = "../logging" }
 whoami = "1.4.1"
-select = "0.6.0"
-url = "2.5.0"
-tree-sitter-md = "0.1.7"
-phf = "0.11.2"
-eventsource-stream = "0.2.3"
 dashmap = "5.5.3"
 lazy_static = "1.4.0"
 sysinfo = "0.30.7"
@@ -93,7 +71,6 @@ quick-xml = { version = "0.31.0", features = [ "serialize" ] }
 derivative = "2.2.0"
 console-subscriber = "0.2.0"
 similar = "2.6.0"
-globset = "0.4.15"
 dirs = "5.0.1"
 diffy = "0.4.0"
 colored = "2.1.0"
