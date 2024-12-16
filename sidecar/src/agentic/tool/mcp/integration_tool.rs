@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, sync::Arc};
-
 use crate::agentic::tool::{
     errors::ToolError,
     input::ToolInput,
@@ -178,6 +177,7 @@ impl Tool for MCPIntegrationToolBroker {
     }
 
     fn tool_description(&self) -> String {
+        // TODO: change description to aggregate descriptions of all servers (or maybe a simpler option?)
         "The MCP Integration tool: Use 'action':'list' to list all servers & tools, 'action':'call' to invoke a tool.".to_string()
     }
 
