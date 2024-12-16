@@ -54,6 +54,7 @@ use super::{
         subprocess_spawned_output::SubProcessSpawnedPendingOutputClient,
         undo_changes::UndoChangesMadeDuringExchange,
     },
+    mcp::integration_tool::MCPIntegrationToolBroker,
     output::ToolOutput,
     plan::{
         add_steps::PlanAddStepClient, generator::StepGeneratorClient, reasoning::ReasoningClient,
@@ -89,9 +90,6 @@ impl ToolBrokerConfiguration {
     }
 }
 
-// TODO(skcd): We want to use a different serializer and deserializer for this
-// since we are going to be storing an array of tools over here, we have to make
-// sure that we do not store everything about the tool but a representation of it
 pub struct ToolBroker {
     tools: HashMap<ToolType, Box<dyn Tool + Send + Sync>>,
 }
@@ -103,10 +101,6 @@ impl ToolBroker {
         symbol_tracking: Arc<SymbolTrackerInline>,
         language_broker: Arc<TSLanguageParsing>,
         tool_broker_config: ToolBrokerConfiguration,
-        // Use this if the llm we were talking to times out or does not produce
-        // outout which is coherent
-        // we should have finer control over the fail-over llm but for now
-        // a global setting like this is fine
         fail_over_llm: LLMProperties,
     ) -> Self {
         let mut tools: HashMap<ToolType, Box<dyn Tool + Send + Sync>> = Default::default();
@@ -260,7 +254,6 @@ impl ToolBroker {
                 fail_over_llm.clone(),
             )),
         );
-        // todo
         tools.insert(
             ToolType::BigSearch,
             Box::new(BigSearchBroker::new(
@@ -354,8 +347,6 @@ impl ToolBroker {
             Box::new(ApplyOutlineEditsToRange::new(
                 llm_client.clone(),
                 fail_over_llm.clone(),
-                // if we are not applying directly, then we are going to stream
-                // the edits to the frontend
                 !tool_broker_config.apply_edits_directly,
             )),
         );
@@ -479,7 +470,17 @@ impl ToolBroker {
             ToolType::FeedbackGeneration,
             Box::new(FeedbackClientGenerator::new(llm_client)),
         );
-        // we also want to add the re-ranking tool here, so we invoke it freely
+
+        // Here we create a placeholder map of MCP clients.
+        // In a real scenario, you'd read config.json and initialize multiple MCP clients.
+        let mcp_clients_map: HashMap<String, Arc<mcp_client_rs::client::Client>> = HashMap::new();
+
+        // Insert the IntegrationTool aggregator
+        tools.insert(
+            ToolType::IntegrationTool,
+            Box::new(MCPIntegrationToolBroker::new(mcp_clients_map)),
+        );
+
         Self { tools }
     }
 
@@ -551,9 +552,6 @@ impl ToolBroker {
         tool_type: ToolType,
         trajectory_length: usize,
     ) -> Vec<ToolRewardScale> {
-        // causally change the code editor tool to be the code-editing
-        // tool, they both are equivalent nad yes I know how disgusting this
-        // feels, trust me
         let updated_tool_type = if tool_type == ToolType::CodeEditorTool {
             ToolType::CodeEditing
         } else {

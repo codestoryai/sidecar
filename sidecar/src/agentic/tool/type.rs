@@ -1,5 +1,3 @@
-//! Contains the basic tool and how to extract data from it
-
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
 
@@ -7,44 +5,28 @@ use super::{errors::ToolError, input::ToolInput, output::ToolOutput};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ToolType {
-    // AskDocumentation,
-    // AskUser,
     PlanningBeforeCodeEdit,
     CodeEditing,
     OpenFile,
-    // Search,
     GoToDefinitions,
     GoToReferences,
-    // FileSystem,
-    // FolderOutline,
-    // Terminal,
     LSPDiagnostics,
     ReRank,
-    // WebScrape,
-    // searches of different kind are over here
     FindCodeSnippets,
     RequestImportantSymbols,
     FindCodeSymbolsCodeBaseWide,
     UtilityCodeSymbolSearch,
     GrepInFile,
     GoToImplementations,
-    // filtering queries go here
     FilterCodeSnippetsForEditing,
     FilterCodeSnippetsSingleSymbolForEditing,
-    // editor requests
     EditorApplyEdits,
-    // quick fix options
     GetQuickFix,
-    // apply quick fix
     ApplyQuickFix,
-    // Error correction tool selection
     CodeCorrectnessActionSelection,
     CodeEditingForError,
-    // Followup decision
     ClassSymbolFollowup,
-    // COT chains
     CodeEditingCOT,
-    // Probe operation
     ProbeCreateQuestionForSymbol,
     ProbeEnoughOrDeeper,
     ProbeSubSymbolFiltering,
@@ -54,102 +36,55 @@ pub enum ToolType {
     ProbeFollowAlongSymbol,
     ProbeSummarizeAnswer,
     ProbeTryHardAnswer,
-    // Repo map Search
     RepoMapSearch,
-    // Get important files by inferring from repo tree
     ImportantFilesFinder,
-    // SWE Bench tool endpoint
     SWEBenchToolEndpoint,
-    // Test correction
     TestCorrection,
-    // Code symbols which we want to follow
     CodeSymbolsToFollowInitialRequest,
-    // Tool to use to generate the final probe answer
     ProbeFinalAnswerSummary,
-    // New sub symbol in class for code editing
     NewSubSymbolRequired,
-    // Find symbol in the codebase using the vscode api
     GrepSymbolInCodebase,
-    // Find new symbol file location
     FindFileForNewSymbol,
-    // Find symbol to edit in user context
     FindSymbolsToEditInContext,
-    // ReRanking code snippets for code editing context
     ReRankingCodeSnippetsForCodeEditingContext,
-    // Apply the outline of the changes to the range we are interested in
     ApplyOutlineEditToRange,
-    // Big search
     BigSearch,
-    // Filter edit operation
     FilterEditOperation,
-    // Keyword search
     KeywordSearch,
-    // inlay hints for the code
     InLayHints,
-    // code location for the new symbol
     CodeSymbolNewLocation,
-    // should edit the code or is it just a check
     ShouldEditCode,
-    // use search and replace blocks for edits
     SearchAndReplaceEditing,
-    // Grabs the git-diff
     GitDiff,
-    // code editing warmup tool
     CodeEditingWarmupTool,
-    // grab outline nodes using the editor
     OutlineNodesUsingEditor,
-    // filters references
     ReferencesFilter,
-    // scratch pad agent
     ScratchPadAgent,
-    // edited files
     EditedFiles,
-    // Reasoning (This is just plain reasoning with no settings right now)
     Reasoning,
-    // Plan updater
     PlanUpdater,
-    // Step generator
     StepGenerator,
-    // Create a new file
     CreateFile,
-    // File diagnostics
     FileDiagnostics,
-    // Add steps to the plan
     PlanStepAdd,
-    // Go to previous word at a position
     GoToPreviousWordRange,
-    // Go to type definition
     GoToTypeDefinition,
-    // Context driven chat reply
     ContextDrivenChatReply,
-    // Create a new exchange during a session
     NewExchangeDuringSession,
-    // Undo changes made via exchange
     UndoChangesMadeDuringSession,
-    // context driven hot streak reply which looks at LSP errors
     ContextDriveHotStreakReply,
-    // Terminal command
     TerminalCommand,
-    // Run tests
-    TestRunner,
-    // Searches the files given a regex pattern
     SearchFileContentWithRegex,
-    // List files
     ListFiles,
-    // Ask for followup questions
     AskFollowupQuestions,
-    // Attempt completion
     AttemptCompletion,
-    // Repo map for a sub-directory
     RepoMapGeneration,
-    // Sub-process spawned pending output
     SubProcessSpawnedPendingOutput,
-    // Reward generation
+    TestRunner,
     RewardGeneration,
-    // Feedback generation
     FeedbackGeneration,
-    // Code editor tool (this is special for anthropic)
     CodeEditorTool,
+    MCPIntegrationTool,
 }
 
 impl std::fmt::Display for ToolType {
@@ -250,6 +185,7 @@ impl std::fmt::Display for ToolType {
             ToolType::RewardGeneration => write!(f, "reward_generation"),
             ToolType::FeedbackGeneration => write!(f, "feedback_generation"),
             ToolType::CodeEditorTool => write!(f, "str_replace_editor"),
+            ToolType::IntegrationTool => write!(f, "integration_tool"),
         }
     }
 }
@@ -281,9 +217,6 @@ impl ToolType {
     }
 }
 
-/// Contains information about the reward scaling for the tool use with a minimum
-/// and a maximum range in which to give the reward out and the criteria for the reward
-/// which is the description if the tool output really does fit within this range
 pub struct ToolRewardScale {
     minimum: i32,
     maximum: i32,
@@ -316,15 +249,11 @@ impl ToolRewardScale {
 pub trait Tool {
     async fn invoke(&self, input: ToolInput) -> Result<ToolOutput, ToolError>;
 
-    /// Provides a verbose description for the tool and what it ends up doing
     fn tool_description(&self) -> String;
 
-    /// Provides an XML format for the input expected by the tool
     fn tool_input_format(&self) -> String;
 
-    /// Gets the evaluation criteria for the tool use
     fn get_evaluation_criteria(&self, trajectory_length: usize) -> Vec<String>;
 
-    /// Gets the reward scaling after the tool has been used
     fn get_reward_scale(&self, trajectory_length: usize) -> Vec<ToolRewardScale>;
 }
