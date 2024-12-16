@@ -10,6 +10,7 @@ build = "build.rs"
 ee = []
 
 [dependencies]
+mcp_client_rs = "0.1.1"
 async-trait = "0.1.77"
 ndarray = "0.15.6"
 smallvec = { version = "1.11.0", features = ["serde"]}
