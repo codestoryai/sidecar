@@ -475,9 +475,9 @@ impl ToolBroker {
         // In a real scenario, you'd read config.json and initialize multiple MCP clients.
         let mcp_clients_map: HashMap<String, Arc<mcp_client_rs::client::Client>> = HashMap::new();
 
-        // Insert the IntegrationTool aggregator
+        // Insert the MCPIntegrationTool aggregator
         tools.insert(
-            ToolType::IntegrationTool,
+            ToolType::MCPIntegrationTool,
             Box::new(MCPIntegrationToolBroker::new(mcp_clients_map)),
         );
 

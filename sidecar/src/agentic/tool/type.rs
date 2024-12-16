@@ -185,7 +185,7 @@ impl std::fmt::Display for ToolType {
             ToolType::RewardGeneration => write!(f, "reward_generation"),
             ToolType::FeedbackGeneration => write!(f, "feedback_generation"),
             ToolType::CodeEditorTool => write!(f, "str_replace_editor"),
-            ToolType::IntegrationTool => write!(f, "integration_tool"),
+            ToolType::MCPIntegrationTool => write!(f, "mcp_integration"),
         }
     }
 }
