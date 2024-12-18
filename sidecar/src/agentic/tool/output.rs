@@ -226,6 +226,7 @@ pub enum ToolOutput {
     RewardGeneration(RewardGenerationResponse),
     // Feedback generation
     FeedbackGeneration(FeedbackGenerationResponse),
+    AnthropicComputer(String),
 }
 
 impl ToolOutput {
