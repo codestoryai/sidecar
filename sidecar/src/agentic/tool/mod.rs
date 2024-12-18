@@ -42,3 +42,4 @@ pub mod swe_bench;
 pub mod terminal;
 pub mod test_runner;
 pub mod r#type;
+pub mod mcp;
