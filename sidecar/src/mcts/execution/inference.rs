@@ -2,16 +2,14 @@
 //! fn execute(nodes: Vec<&ActionNode>) -> Result<ToolOutput, ExecutionError>;
 
 use colored::Colorize;
-use std::{collections::HashMap, path::Path, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use llm_client::clients::types::{LLMClientMessage, LLMClientToolReturn, LLMClientToolUse};
 
 use crate::{
     agentic::{
         symbol::{
-            errors::SymbolError,
-            events::{edit::SymbolToEdit, message_event::SymbolEventMessageProperties},
-            identifier::SymbolIdentifier,
+            errors::SymbolError, events::message_event::SymbolEventMessageProperties,
             tool_box::ToolBox,
         },
         tool::{
@@ -30,7 +28,6 @@ use crate::{
             test_runner::runner::TestRunnerRequest,
         },
     },
-    chunking::text_document::{Position, Range},
     mcts::{
         action_node::{ActionNode, ActionObservation, ActionToolParameters, SearchTree},
         agent_settings::settings::AgentSettings,
@@ -259,7 +256,6 @@ impl InferenceEngine {
             "linux".to_owned(),
             "bash".to_owned(),
             Some(search_tree.repo_name()),
-            false,
         );
 
         let session_messages = messages
@@ -285,6 +281,7 @@ impl InferenceEngine {
                 .collect(),
             problem_statement,
             self.agent_settings.is_midwit(),
+            None,
             message_properties.clone(),
         );
 
@@ -297,7 +294,7 @@ impl InferenceEngine {
         let mut tool_use_output: Result<ToolUseAgentOutputWithTools, SymbolError>;
         loop {
             tool_use_output = tool_use_agent
-                .invoke_json_tool(tool_agent_input.clone())
+                .invoke_json_tool_swe_bench(tool_agent_input.clone())
                 .await;
             if tool_use_output.is_ok() {
                 // check if the result of running the tool use output is empty
@@ -441,7 +438,6 @@ impl InferenceEngine {
             "linux".to_owned(),
             "bash".to_owned(),
             Some(search_tree.repo_name()),
-            false,
         );
 
         let mut session_messages = messages
@@ -564,242 +560,8 @@ Always include the <thinking></thinking> section before using the tool."#
                     true,
                 ))
             }
-            ToolInputPartial::CodeEditing(code_editing) => {
-                let fs_file_path = code_editing.fs_file_path().to_owned();
-                let file_contents = tool_box
-                    .file_open(fs_file_path.to_owned(), message_properties.clone())
-                    .await
-                    .map_err(|e| InferenceError::SymbolError(e))?
-                    .contents();
-
-                let instruction = code_editing.instruction().to_owned();
-
-                // keep track of the file content which we are about to modify over here
-                let _old_file_content = tool_box
-                    .file_open(fs_file_path.to_owned(), message_properties.clone())
-                    .await;
-
-                // if the file is very very large then we chunk it up and use search and replace
-                // on individual chunks instead
-                let updated_code = if file_contents.lines().into_iter().collect::<Vec<_>>().len()
-                    >= 1300
-                    // lets forgo the idea of being smart, do a simple edit
-                    // if that does not work then we will know we fucked up in our
-                    // observations
-                    && false
-                {
-                    let first_part_lines = file_contents
-                        .to_owned()
-                        .lines()
-                        .into_iter()
-                        .enumerate()
-                        .filter_map(|(idx, line)| {
-                            if idx <= 750 {
-                                Some(line.to_owned())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    let second_part_lines = file_contents
-                        .to_owned()
-                        .lines()
-                        .into_iter()
-                        .enumerate()
-                        .filter_map(|(idx, line)| {
-                            if idx > 750 {
-                                Some(line.to_owned())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    let range_to_edit =
-                        Range::new(Position::new(0, 0, 0), Position::new(10_000, 0, 0));
-
-                    // First half of the file has been edited
-                    let symbol_to_edit = SymbolToEdit::new(
-                        fs_file_path.to_owned(),
-                        range_to_edit,
-                        fs_file_path.to_owned(),
-                        vec![instruction.clone()],
-                        false,
-                        false, // is_new
-                        false,
-                        "".to_owned(),
-                        None,
-                        false,
-                        None,
-                        false,
-                        None,
-                        vec![], // previous_user_queries
-                        None,
-                    )
-                    .set_should_stream_status(false);
-
-                    let symbol_identifier = SymbolIdentifier::new_symbol(&fs_file_path);
-
-                    let first_part_edited = tool_box
-                        .code_editing_with_search_and_replace(
-                            &symbol_to_edit,
-                            &fs_file_path,
-                            &first_part_lines,
-                            &range_to_edit,
-                            "".to_owned(),
-                            instruction.clone(),
-                            &symbol_identifier,
-                            None,
-                            None,
-                            message_properties.clone(),
-                        )
-                        .await
-                        .map_err(|e| InferenceError::SymbolError(e))?; // big expectations but can also fail, we should handle it properly
-
-                    // Editing second half of the file
-                    let symbol_to_edit = SymbolToEdit::new(
-                        fs_file_path.to_owned(),
-                        range_to_edit,
-                        fs_file_path.to_owned(),
-                        vec![instruction.clone()],
-                        false,
-                        false, // is_new
-                        false,
-                        "".to_owned(),
-                        None,
-                        false,
-                        None,
-                        false,
-                        None,
-                        vec![], // previous_user_queries
-                        None,
-                    )
-                    .set_should_stream_status(false);
-
-                    let symbol_identifier = SymbolIdentifier::new_symbol(&fs_file_path);
-
-                    let second_part_edited = tool_box
-                        .code_editing_with_search_and_replace(
-                            &symbol_to_edit,
-                            &fs_file_path,
-                            &second_part_lines,
-                            &range_to_edit,
-                            "".to_owned(),
-                            format!(r#"{}
-This is part of the file which might not contain the method in full, if thats the case do not generate any edits"#, instruction.clone()),
-                            &symbol_identifier,
-                            None,
-                            None,
-                            message_properties.clone(),
-                        )
-                        .await
-                        .map_err(|e| InferenceError::SymbolError(e))?; // big expectations but can also fail, we should handle it properly
-                    format!(
-                        r#"{}
-{}"#,
-                        first_part_edited, second_part_edited
-                    )
-                } else {
-                    let default_range =
-                    // very large end position
-                    Range::new(Position::new(0, 0, 0), Position::new(10_000, 0, 0));
-
-                    let symbol_to_edit = SymbolToEdit::new(
-                        fs_file_path.to_owned(),
-                        default_range,
-                        fs_file_path.to_owned(),
-                        vec![instruction.clone()],
-                        false,
-                        false, // is_new
-                        false,
-                        "".to_owned(),
-                        None,
-                        false,
-                        None,
-                        false,
-                        None,
-                        vec![], // previous_user_queries
-                        None,
-                    )
-                    .set_should_stream_status(false);
-
-                    let symbol_identifier = SymbolIdentifier::new_symbol(&fs_file_path);
-
-                    tool_box
-                        .code_editing_with_search_and_replace(
-                            &symbol_to_edit,
-                            &fs_file_path,
-                            &file_contents,
-                            &default_range,
-                            "".to_owned(),
-                            instruction.clone(),
-                            &symbol_identifier,
-                            None,
-                            None,
-                            message_properties.clone(),
-                        )
-                        .await
-                        .map_err(|e| InferenceError::SymbolError(e))? // big expectations but can also fail, we should handle it properly
-                };
-                // This code-block only ever hits for the swe-bench run and nothing else
-                // in the future we should create a tool for this, but this will help unblock us
-                {
-                    // we want to update the whole file content with the new content over here
-                    // first we check if the file really exists on the fs, if it does not we create it
-                    if let Ok(false) = tokio::fs::try_exists(fs_file_path.to_owned()).await {
-                        tokio::fs::create_dir_all(
-                            Path::new(&fs_file_path).parent().expect("to exist"),
-                        )
-                        .await
-                        .expect("creating parent directory to work");
-                        tokio::fs::File::create(fs_file_path.to_owned())
-                            .await
-                            .expect("file creation to not fail");
-                    }
-                    let _ =
-                        tokio::fs::write(fs_file_path.to_owned(), updated_code.to_owned()).await;
-
-                    // we have the original file content and the updated code content
-                    // we want to generate a git-diff between the 2 and pass that to the LLM implicitly
-                    // since we do not have a recent-edits handle easily implemented in python mock editor
-                    // This is really bad but we are interested in testing out things for now (DO NOT COMMIT)
-                    let client = reqwest::Client::new();
-                    let original_content = &file_contents;
-                    let request_object = serde_json::json!({
-                        "original_content": original_content,
-                        "modified_content": updated_code,
-                        "fs_file_path": fs_file_path.to_owned(),
-                    });
-                    let response = client
-                        .post(message_properties.editor_url() + "/diff_generator")
-                        .body(serde_json::to_string(&request_object).expect("to work"))
-                        .send()
-                        .await
-                        .expect("to get a reply");
-                    #[derive(serde::Deserialize)]
-                    struct FileEditedResponseStruct {
-                        generated_diff: String,
-                    }
-                    let response: FileEditedResponseStruct =
-                        response.json().await.expect("to work");
-                    let generated_diff = response.generated_diff;
-                    let message = if updated_code.trim() == original_content.trim() {
-                        "Failed to perform the requested edits".to_owned()
-                    } else {
-                        format!(
-                            r#"I performed the edits which you asked me to, and here is the patch with the changes
-{generated_diff}"#
-                        )
-                    };
-                    Ok(ActionObservation::new(
-                        message.to_owned(),
-                        message,
-                        Some(tool_thinking),
-                        false,
-                    )
-                    .file_content_updated(fs_file_path, updated_code))
-                }
+            ToolInputPartial::CodeEditing(_) => {
+                todo!("code editing is not supported with the inference engine for code editing, use anthropic computer use api instead")
             }
             ToolInputPartial::LSPDiagnostics(_) => {
                 todo!("LSP diagnostics are not supported right now")

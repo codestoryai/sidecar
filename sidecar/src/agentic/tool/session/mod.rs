@@ -11,5 +11,4 @@ pub(crate) mod exchange;
 pub(crate) mod hot_streak;
 pub mod service;
 pub mod session;
-pub mod test_generation_agent;
 pub mod tool_use_agent;

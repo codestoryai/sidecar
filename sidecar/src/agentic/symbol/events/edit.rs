@@ -80,11 +80,6 @@ impl SymbolToEdit {
         }
     }
 
-    pub fn set_should_stream_status(mut self, should_stream: bool) -> Self {
-        self.should_stream = should_stream;
-        self
-    }
-
     pub fn should_stream(&self) -> bool {
         self.should_stream
     }

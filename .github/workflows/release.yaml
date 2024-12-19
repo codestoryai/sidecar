@@ -73,16 +73,12 @@ jobs:
         rustup target add aarch64-pc-windows-msvc
         rustup component add rust-std-aarch64-pc-windows-msvc
 
-    - name: Install cross for cross-compilation
+    - name: Setup cross for cross-compilation
       if: matrix.job.use-cross
       shell: bash
       run: |
-        cargo install cross --git https://github.com/cross-rs/cross
-
-    - name: Overwrite build command env variable
-      if: matrix.job.use-cross
-      shell: bash
-      run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
+        cargo install cross --git https://github.com/ghostwriternr/cross
+        echo "BUILD_CMD=cross" >> $GITHUB_ENV
 
     - uses: Swatinem/rust-cache@v2
       with:

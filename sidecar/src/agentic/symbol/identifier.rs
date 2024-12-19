@@ -76,6 +76,12 @@ impl LLMProperties {
         self.llm = LLMType::GeminiPro;
         self
     }
+
+    /// Only allow tool use when we are using anthropic since open-router does not
+    /// support the str_replace_editor tool natively
+    pub fn supports_midwit_and_tool_use(&self) -> bool {
+        self.llm() == &LLMType::ClaudeSonnet && matches!(&self.provider, &LLMProvider::Anthropic)
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, std::hash::Hash, serde::Serialize)]

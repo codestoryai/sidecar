@@ -1,7 +1,7 @@
 //! We can create a new session over here and its composed of exchanges
 //! The exchanges can be made by the human or the agent
 
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use futures::StreamExt;
 use tokio::io::AsyncWriteExt;
@@ -24,7 +24,6 @@ use crate::{
             ui_event::UIEventWithID,
         },
         tool::{
-            broker::ToolBroker,
             helpers::diff_recent_changes::DiffFileContent,
             input::{ToolInput, ToolInputPartial},
             lsp::{
@@ -37,6 +36,7 @@ use crate::{
             },
             r#type::{Tool, ToolType},
             repo_map::generator::RepoMapGeneratorRequest,
+            session::tool_use_agent::{ToolUseAgentInputOnlyTools, ToolUseAgentOutputWithTools},
             terminal::terminal::TerminalInput,
             test_runner::runner::TestRunnerRequest,
         },
@@ -47,10 +47,21 @@ use crate::{
 };
 
 use super::{
-    chat::{SessionChatClientRequest, SessionChatMessage, SessionChatMessageImage},
+    chat::{
+        SessionChatClientRequest, SessionChatMessage, SessionChatMessageImage,
+        SessionChatToolReturn, SessionChatToolUse,
+    },
     hot_streak::SessionHotStreakRequest,
     tool_use_agent::{ToolUseAgent, ToolUseAgentInput, ToolUseAgentOutput},
 };
+
+#[derive(Debug)]
+struct ToolExecutionOutput {
+    message: String,
+    thinking: Option<String>,
+    expect_correction: bool,
+    summary: Option<String>,
+}
 
 #[derive(Debug)]
 pub enum AgentToolUseOutput {
@@ -156,6 +167,7 @@ pub struct ExchangeTypeToolOutput {
     output: String,
     exchange_id: String,
     user_context: UserContext,
+    tool_use_id: String,
 }
 
 impl ExchangeTypeToolOutput {
@@ -164,12 +176,14 @@ impl ExchangeTypeToolOutput {
         output: String,
         exchange_id: String,
         user_context: UserContext,
+        tool_use_id: String,
     ) -> Self {
         Self {
             tool_type,
             output,
             exchange_id,
             user_context,
+            tool_use_id,
         }
     }
 }
@@ -201,6 +215,9 @@ pub struct ExchangeReplyAgentTool {
     // for now, I am leaving things here until I can come up with a proper API for that
     tool_input_partial: ToolInputPartial,
     thinking: String,
+    // The tool use id which we need to send back along with the tool parameters
+    // if they are present
+    tool_use_id: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -251,12 +268,14 @@ impl ExchangeTypeAgent {
         tool_type: ToolType,
         thinking: String,
         parent_exchange_id: String,
+        tool_use_id: String,
     ) -> Self {
         Self {
             reply: ExchangeReplyAgent::Tool(ExchangeReplyAgentTool {
                 tool_type,
                 tool_input_partial,
                 thinking,
+                tool_use_id,
             }),
             parent_exchange_id,
         }
@@ -410,6 +429,7 @@ impl Exchange {
         tool_input: ToolInputPartial,
         tool_type: ToolType,
         thinking: String,
+        tool_use_id: String,
     ) -> Self {
         Self {
             exchange_id,
@@ -418,6 +438,7 @@ impl Exchange {
                 tool_type,
                 thinking,
                 parent_exchange_id,
+                tool_use_id,
             )),
             exchange_state: ExchangeState::Running,
         }
@@ -428,6 +449,7 @@ impl Exchange {
         tool_type: ToolType,
         output: String,
         user_context: UserContext,
+        tool_use_id: String,
     ) -> Self {
         Self {
             exchange_id: exchange_id.to_owned(),
@@ -436,6 +458,7 @@ impl Exchange {
                 output,
                 exchange_id.clone(),
                 user_context,
+                tool_use_id,
             )),
             exchange_state: ExchangeState::Running,
         }
@@ -480,7 +503,7 @@ impl Exchange {
     ///
     /// We can have consecutive human messages now on every API so this is no
     /// longer a big worry
-    async fn to_conversation_message(&self, _tool_broker: Arc<ToolBroker>) -> SessionChatMessage {
+    async fn to_conversation_message(&self, is_json_mode: bool) -> SessionChatMessage {
         match &self.exchange_type {
             ExchangeType::HumanChat(ref chat_message) => {
                 // TODO(skcd): Figure out caching etc later on
@@ -570,29 +593,69 @@ impl Exchange {
                         }
                     }
                     ExchangeReplyAgent::Tool(tool_input) => {
-                        let tool_input_parameters = &tool_input.tool_input_partial;
-                        let thinking = &tool_input.thinking;
-                        SessionChatMessage::assistant(
-                            format!(
-                                r#"<thinking>
-{thinking}
-</thinking>
-{}"#,
-                                tool_input_parameters.to_string()
-                            ),
-                            vec![],
-                        )
+                        if is_json_mode {
+                            let tool_input_parameters =
+                                &tool_input.tool_input_partial.to_json_value();
+                            match tool_input_parameters {
+                                Some(schema) => {
+                                    // TODO(skcd): Figure out if the thinking here is in proper tags
+                                    SessionChatMessage::assistant(
+                                        tool_input.thinking.to_owned(),
+                                        vec![],
+                                    )
+                                    .insert_tool_use(
+                                        SessionChatToolUse::new(
+                                            tool_input
+                                                .tool_input_partial
+                                                .to_tool_type()
+                                                .to_string(),
+                                            tool_input.tool_use_id.to_owned(),
+                                            schema.clone(),
+                                        ),
+                                    )
+                                }
+                                None => SessionChatMessage::assistant(
+                                    tool_input.tool_input_partial.to_string(),
+                                    vec![],
+                                ),
+                            }
+                        } else {
+                            let tool_input_parameters = &tool_input.tool_input_partial;
+                            let thinking = &tool_input.thinking;
+                            SessionChatMessage::assistant(
+                                format!(
+                                    r#"<thinking>
+    {thinking}
+    </thinking>
+    {}"#,
+                                    tool_input_parameters.to_string()
+                                ),
+                                vec![],
+                            )
+                        }
                     }
                 }
             }
-            ExchangeType::ToolOutput(ref tool_output) => SessionChatMessage::user(
-                format!(
-                    "Tool Output ({}): {}",
-                    tool_output.tool_type.to_string(),
-                    tool_output.output,
-                ),
-                vec![],
-            ),
+            ExchangeType::ToolOutput(ref tool_output) => {
+                if is_json_mode {
+                    SessionChatMessage::user("".to_owned(), vec![]).insert_tool_return_value(
+                        SessionChatToolReturn::new(
+                            tool_output.tool_use_id.to_owned(),
+                            tool_output.tool_type.to_string(),
+                            tool_output.output.to_owned(),
+                        ),
+                    )
+                } else {
+                    SessionChatMessage::user(
+                        format!(
+                            "Tool Output ({}): {}",
+                            tool_output.tool_type.to_string(),
+                            tool_output.output,
+                        ),
+                        vec![],
+                    )
+                }
+            }
             ExchangeType::Plan(ref plan) => {
                 let user_query = &plan.query;
                 SessionChatMessage::user(
@@ -702,62 +765,6 @@ impl Session {
         self.exchanges
             .iter_mut()
             .find(|exchange| &exchange.exchange_id == exchange_id)
-    }
-
-    fn decay_messages(
-        &self,
-        // both of these have the same length
-        exchanges: &[Exchange],
-        mut conversation_messages: Vec<SessionChatMessage>,
-    ) -> Vec<SessionChatMessage> {
-        // The algorithm we use for decay is the following:
-        // - When using any tool which is of map type query -> List<Results>
-        // we keep the tool output for the map tool type as long as there is not
-        // a mutation (code_edit) or we use another map type tool
-        // - This allows us to keep the token usage small while still retaining
-        let mut previous_map_tool_indices = vec![];
-        for (idx, exchange) in exchanges.into_iter().enumerate() {
-            match &exchange.exchange_type {
-                ExchangeType::AgentChat(agent_chat) => match &agent_chat.reply {
-                    ExchangeReplyAgent::Tool(tool_input) => {
-                        let input_tool_type = &tool_input.tool_type;
-                        // We are have an input tool over here
-                        // map_tool_type || mutation_tool_type
-                        // [T T T T M I I C T M I I I M M T T]
-                        // if we get a C which is code-edit
-                        // then we remove the output of the previous map test
-                        // and if we have multiple M steps we remove all of them
-                        // until we get a C (code-edit)
-                        if input_tool_type.is_map_type() {
-                            previous_map_tool_indices.push(idx);
-                        }
-                        if input_tool_type.is_code_edit_type() {
-                            // rest all the running map types over here sinc we
-                            // have started started code editing
-                            previous_map_tool_indices.into_iter().for_each(
-                                |map_tool_input_index| {
-                                    // the tool output is generally immediately
-                                    // after the current tool input index
-                                    let role = conversation_messages[map_tool_input_index + 1]
-                                        .role()
-                                        .clone();
-                                    conversation_messages[map_tool_input_index + 1] =
-                                        SessionChatMessage::new(
-                                            role,
-                                            "... truncated output".to_owned(),
-                                            vec![],
-                                        );
-                                },
-                            );
-                            previous_map_tool_indices = vec![];
-                        }
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
-        conversation_messages
     }
 
     /// Finds the exchange we are interested in and mutates the previous queries
@@ -871,12 +878,18 @@ impl Session {
         tool_type: ToolType,
         output: String,
         user_context: UserContext,
+        tool_use_id: String,
     ) -> Self {
         self.global_running_user_context = self
             .global_running_user_context
             .merge_user_context(user_context.clone());
-        let exchange =
-            Exchange::tool_output(exchange_id.to_owned(), tool_type, output, user_context);
+        let exchange = Exchange::tool_output(
+            exchange_id.to_owned(),
+            tool_type,
+            output,
+            user_context,
+            tool_use_id,
+        );
         self.exchanges.push(exchange);
         self
     }
@@ -1084,6 +1097,128 @@ impl Session {
         Ok(self)
     }
 
+    /// TODO(skcd): Figure out how to support this properly
+    pub async fn get_tool_to_use_json(
+        mut self,
+        tool_box: Arc<ToolBox>,
+        excahnge_id: String,
+        parent_exchange_id: String,
+        tool_use_agent: ToolUseAgent,
+        message_properties: SymbolEventMessageProperties,
+    ) -> Result<AgentToolUseOutput, SymbolError> {
+        let mut convereted_messages = vec![];
+        for previous_message in self.exchanges.iter() {
+            convereted_messages.push(previous_message.to_conversation_message(true).await);
+        }
+
+        // grab the terminal output if anything is present and pass it as part of the
+        // agent input
+        let pending_spawned_process_output = tool_box
+            .grab_pending_subprocess_output(message_properties.clone())
+            .await?;
+
+        let tool_agent_input = ToolUseAgentInputOnlyTools::new(
+            convereted_messages,
+            self.tools
+                .into_iter()
+                .filter_map(|tool_type| tool_box.tools().get_tool_json(&tool_type))
+                .collect(),
+            "".to_owned(),
+            true,
+            pending_spawned_process_output,
+            message_properties.clone(),
+        );
+
+        // have a retry logic here which tries hard to make sure there are no errors
+        // when creating the tool which needs to be used
+        let mut tool_retry_index = 0;
+        // we can try a max of 3 times before giving up
+        let max_tool_retry = 3;
+
+        let mut tool_use_output: Result<ToolUseAgentOutputWithTools, SymbolError>;
+        loop {
+            tool_use_output = tool_use_agent
+                .invoke_json_tool_use(tool_agent_input.clone())
+                .await;
+            if tool_use_output.is_ok() {
+                // check if the result of running the tool use output is empty
+                if let Ok(tool_use_output) = tool_use_output.as_ref() {
+                    match tool_use_output {
+                        ToolUseAgentOutputWithTools::Success((tools, _input)) => {
+                            if tools.is_empty() {
+                                println!(
+                                    "{}",
+                                    format!("inference::enging::retrying_empty_tool_output")
+                                );
+                                tokio::time::sleep(Duration::from_secs(1)).await;
+                                tool_retry_index = tool_retry_index + 1;
+                                if tool_retry_index >= max_tool_retry {
+                                    break;
+                                }
+                                continue;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                break;
+            } else {
+                println!(
+                    "{}",
+                    format!("inference::engine::retrying_tool_call::erroredbefore")
+                );
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                // just give it a plain retry and call it a day
+                tool_retry_index = tool_retry_index + 1;
+            }
+            if tool_retry_index >= max_tool_retry {
+                break;
+            }
+        }
+
+        // The real problem here is how do we show the feedback to the user over here
+        // we were previously sending back feedback about the tool parameters which we found
+        // what should we do now?
+        // TODO(skcd): Figure out how the data passing here will work
+        match tool_use_output {
+            Ok(tool_use_parameters) => match tool_use_parameters {
+                ToolUseAgentOutputWithTools::Success((tool_input_partial, _thinking)) => {
+                    if tool_input_partial.is_empty() {}
+                }
+                ToolUseAgentOutputWithTools::Failure(_thinking) => {}
+            },
+            Err(e) => {}
+        }
+
+        todo!()
+    }
+
+    /// Executes the tool and generates the output over here to use from the tool
+    fn execute_tool_and_generate_observation(
+        &self,
+        tool_input_partial: ToolInputPartial,
+        thinking: String,
+        tool_box: Arc<ToolBox>,
+        message_properties: SymbolEventMessageProperties,
+    ) -> Result<ToolExecutionOutput, SymbolError> {
+        let tool_execution_output = match tool_input_partial {
+            ToolInputPartial::AskFollowupQuestions(followup_question) => {}
+            ToolInputPartial::AttemptCompletion(attempt_completion) => {}
+            ToolInputPartial::CodeEditing(code_editing) => {}
+            ToolInputPartial::CodeEditorParameters(code_editor_parameters) => {}
+            ToolInputPartial::LSPDiagnostics(lsp_diagnostics) => {}
+            ToolInputPartial::ListFiles(list_files) => {}
+            ToolInputPartial::OpenFile(open_files) => {}
+            ToolInputPartial::RepoMapGeneration(repo_map_generation) => {}
+            ToolInputPartial::SearchFileContentWithRegex(search_with_regex) => {}
+            ToolInputPartial::TerminalCommand(terminal_command) => {}
+            ToolInputPartial::TestRunner(_) => {
+                todo!("test runner command is not supported")
+            }
+        };
+        todo!("figure out how to implement each of these")
+    }
+
     pub async fn get_tool_to_use(
         mut self,
         tool_box: Arc<ToolBox>,
@@ -1095,11 +1230,7 @@ impl Session {
         // figure out what to do over here given the state of the session
         let mut converted_messages = vec![];
         for previous_message in self.exchanges.iter() {
-            converted_messages.push(
-                previous_message
-                    .to_conversation_message(tool_box.tools().clone())
-                    .await,
-            );
+            converted_messages.push(previous_message.to_conversation_message(false).await);
         }
 
         // decay the content of the messages depending on the decay condition
@@ -1141,10 +1272,11 @@ impl Session {
                 let tool_type = tool_input_partial.to_tool_type();
                 self.exchanges.push(Exchange::agent_tool_use(
                     parent_exchange_id,
-                    exchange_id,
+                    exchange_id.to_owned(),
                     tool_input_partial.clone(),
                     tool_type,
                     thinking,
+                    exchange_id,
                 ));
                 Ok(AgentToolUseOutput::Success((tool_input_partial, self)))
             }
@@ -1237,11 +1369,7 @@ impl Session {
         // reply to
         let mut converted_messages = vec![];
         for previous_message in self.exchanges.iter() {
-            converted_messages.push(
-                previous_message
-                    .to_conversation_message(tool_box.tools().clone())
-                    .await,
-            );
+            converted_messages.push(previous_message.to_conversation_message(false).await);
         }
 
         let exchange_id = message_properties.request_id_str().to_owned();
@@ -1476,11 +1604,7 @@ impl Session {
             // reply to
             let mut converted_messages = vec![];
             for previous_message in self.exchanges.iter() {
-                converted_messages.push(
-                    previous_message
-                        .to_conversation_message(tool_box.tools().clone())
-                        .await,
-                );
+                converted_messages.push(previous_message.to_conversation_message(false).await);
             }
             let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
             let mut stream_receiver =
@@ -1792,11 +1916,7 @@ impl Session {
         {
             let mut converted_messages = vec![];
             for previous_message in self.exchanges.iter() {
-                converted_messages.push(
-                    previous_message
-                        .to_conversation_message(tool_box.tools().clone())
-                        .await,
-                );
+                converted_messages.push(previous_message.to_conversation_message(false).await);
             }
             // send a message over that the inference will start in a bit
             let _ = message_properties
@@ -1942,11 +2062,7 @@ impl Session {
 
         let mut converted_messages = vec![];
         for previous_message in self.exchanges.iter() {
-            converted_messages.push(
-                previous_message
-                    .to_conversation_message(tool_box.tools().clone())
-                    .await,
-            );
+            converted_messages.push(previous_message.to_conversation_message(false).await);
         }
         let (diagnostics, mut extra_variables) = tool_box
             .grab_workspace_diagnostics(message_properties.clone())
@@ -2110,96 +2226,14 @@ impl Session {
         self
     }
 
-    async fn handle_critique(
-        mut self,
-        tool_agent: ToolUseAgent,
-        tool_box: Arc<ToolBox>,
-        original_user_message: String,
-        message_properties: SymbolEventMessageProperties,
-    ) -> Result<Self, SymbolError> {
-        // figure out what to do over here given the state of the session
-        let mut converted_messages = vec![];
-        for previous_message in self.exchanges.iter() {
-            converted_messages.push(
-                previous_message
-                    .to_conversation_message(tool_box.tools().clone())
-                    .await,
-            );
-        }
-
-        // decay the content of the messages depending on the decay condition
-        // so we can keep the context smaller and more relevant
-        converted_messages = self.decay_messages(self.exchanges.as_slice(), converted_messages);
-        let input =
-            ToolUseAgentInput::new(converted_messages, vec![], None, message_properties.clone());
-        let critique = tool_agent.invoke_critique(input).await?;
-        // reset all the exchanges since we are going to start a new
-        println!("session::handle_critique::starting_new");
-        let exchange_message = format!(
-            r#"When trying to solve this issue before we ran into a wrong approach, the patch was reviewed by a senior engineer who had the following helpful feedback to share:
-{}
-            
-We have also reset the repository state and discarded all the changes which you did before. This is to help you start on a fresh plate.
-
-The Github Issue we are trying to solve is:
-{original_user_message}"#,
-            critique
-        );
-        self.exchanges = vec![];
-        self.exchanges.push(Exchange::human_chat(
-            "critique".to_owned(),
-            exchange_message,
-            UserContext::default(),
-            self.project_labels.to_vec(),
-            self.repo_ref.clone(),
-        ));
-
-        // reset the repository status by running git stash
-        let _ = tool_box
-            .use_terminal_command("git stash", message_properties)
-            .await;
-        self.save_to_storage().await?;
-        Ok(self)
-    }
-
     pub async fn invoke_tool(
         mut self,
         tool_type: ToolType,
         tool_input_partial: ToolInputPartial,
         tool_box: Arc<ToolBox>,
-        should_stream_edits: bool,
-        tool_agent: ToolUseAgent,
-        original_user_message: String,
-        is_test_generation: bool,
-        is_swe_bench: bool,
+        root_directory: String,
         message_properties: SymbolEventMessageProperties,
     ) -> Result<Self, SymbolError> {
-        // we want to send a new event only when we are not going to ask for the followup questions
-        // we might have generated a new exchange id over here if we are going to be working
-        // on top of any tool which does not require user feedback
-        // let exchange_id = if !matches!(tool_type, ToolType::AskFollowupQuestions)
-        //     && !matches!(tool_type, ToolType::AttemptCompletion)
-        // {
-        //     let new_exchange_id = tool_box
-        //         .create_new_exchange(
-        //             message_properties.root_request_id().to_owned(),
-        //             message_properties.clone(),
-        //         )
-        //         .await?;
-        //     message_properties = message_properties.set_request_id(new_exchange_id.to_owned());
-        //     let session_id = message_properties.root_request_id().to_owned();
-        //     let exchange_id = message_properties.request_id_str().to_owned();
-        //     let _ = message_properties
-        //         .ui_sender()
-        //         .send(UIEventWithID::tool_output_type_found(
-        //             session_id.to_owned(),
-        //             exchange_id.to_owned(),
-        //             tool_type.clone(),
-        //         ));
-        //     new_exchange_id
-        // } else {
-        //     message_properties.request_id_str().to_owned()
-        // };
         let exchange_id = message_properties.request_id_str().to_owned();
         match tool_input_partial {
             ToolInputPartial::TestRunner(test_runner) => {
@@ -2247,25 +2281,8 @@ The Github Issue we are trying to solve is:
                     tool_type.clone(),
                     formatted_output, // truncated
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
-
-                // The test running is a terminal condition, if we have an exit code 0
-                // we are good, otherwise the cirtique will take a look
-                // we only do this when we are not generating test cases
-                if !is_test_generation {
-                    if test_runner_output.exit_code() != 0 {
-                        return self
-                            .handle_critique(
-                                tool_agent,
-                                tool_box,
-                                original_user_message,
-                                message_properties,
-                            )
-                            .await;
-                    } else if test_runner_output.exit_code() == 0 {
-                        return Err(SymbolError::TestCaseIsPassing);
-                    }
-                }
             }
             ToolInputPartial::AskFollowupQuestions(_followup_question) => {
                 // this waits for the user-feedback so we do not need to react or
@@ -2279,7 +2296,15 @@ The Github Issue we are trying to solve is:
                 // figure out what to do over here
             }
             ToolInputPartial::CodeEditing(code_editing) => {
-                let fs_file_path = code_editing.fs_file_path().to_owned();
+                let mut fs_file_path = code_editing.fs_file_path().to_owned();
+                if !std::path::Path::new(&fs_file_path).is_absolute() {
+                    // we need to join the file path here with the root directory
+                    println!("fixing relative file path");
+                    fs_file_path = std::path::Path::new(&root_directory)
+                        .join(fs_file_path)
+                        .to_string_lossy()
+                        .to_string();
+                }
                 println!("Code editing: {}", fs_file_path);
                 let file_contents = tool_box
                     .file_open(fs_file_path.to_owned(), message_properties.clone())
@@ -2295,125 +2320,7 @@ The Github Issue we are trying to solve is:
 
                 // if the file is very very large then we chunk it up and use search and replace
                 // on individual chunks instead
-                let updated_code = if file_contents.lines().into_iter().collect::<Vec<_>>().len()
-                    >= 1300
-                    // if we are not in swe_bench mode, never try to be extra, go with
-                    // the standard search and replace flow
-                    && !is_swe_bench
-                {
-                    let first_part_lines = file_contents
-                        .to_owned()
-                        .lines()
-                        .into_iter()
-                        .enumerate()
-                        .filter_map(|(idx, line)| {
-                            if idx <= 750 {
-                                Some(line.to_owned())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    let second_part_lines = file_contents
-                        .to_owned()
-                        .lines()
-                        .into_iter()
-                        .enumerate()
-                        .filter_map(|(idx, line)| {
-                            if idx > 750 {
-                                Some(line.to_owned())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    let first_range =
-                        Range::new(Position::new(0, 0, 0), Position::new(10_000, 0, 0));
-                    let second_range =
-                        Range::new(Position::new(0, 0, 0), Position::new(10_000, 0, 0));
-
-                    // First half of the file has been edited
-                    let symbol_to_edit = SymbolToEdit::new(
-                        fs_file_path.to_owned(),
-                        first_range,
-                        fs_file_path.to_owned(),
-                        vec![instruction.clone()],
-                        false,
-                        false, // is_new
-                        false,
-                        "".to_owned(),
-                        None,
-                        false,
-                        None,
-                        false,
-                        None,
-                        vec![], // previous_user_queries
-                        None,
-                    )
-                    .set_should_stream_status(should_stream_edits);
-
-                    let symbol_identifier = SymbolIdentifier::new_symbol(&fs_file_path);
-
-                    let first_part_edited = tool_box
-                        .code_editing_with_search_and_replace(
-                            &symbol_to_edit,
-                            &fs_file_path,
-                            &first_part_lines,
-                            &first_range,
-                            "".to_owned(),
-                            instruction.clone(),
-                            &symbol_identifier,
-                            None,
-                            None,
-                            message_properties.clone(),
-                        )
-                        .await?; // big expectations but can also fail, we should handle it properly
-
-                    // Editing second half of the file
-                    let symbol_to_edit = SymbolToEdit::new(
-                        fs_file_path.to_owned(),
-                        second_range,
-                        fs_file_path.to_owned(),
-                        vec![instruction.clone()],
-                        false,
-                        false, // is_new
-                        false,
-                        "".to_owned(),
-                        None,
-                        false,
-                        None,
-                        false,
-                        None,
-                        vec![], // previous_user_queries
-                        None,
-                    )
-                    .set_should_stream_status(should_stream_edits);
-
-                    let symbol_identifier = SymbolIdentifier::new_symbol(&fs_file_path);
-
-                    let second_part_edited = tool_box
-                        .code_editing_with_search_and_replace(
-                            &symbol_to_edit,
-                            &fs_file_path,
-                            &second_part_lines,
-                            &second_range,
-                            "".to_owned(),
-                            format!(r#"{}
-This is part of the file which might not contain the method in full, if thats the case do not generate any edits"#, instruction.clone()),
-                            &symbol_identifier,
-                            None,
-                            None,
-                            message_properties.clone(),
-                        )
-                        .await?; // big expectations but can also fail, we should handle it properly
-                    format!(
-                        r#"{}
-{}"#,
-                        first_part_edited, second_part_edited
-                    )
-                } else {
+                let _ = {
                     let default_range =
                     // very large end position
                     Range::new(Position::new(0, 0, 0), Position::new(10_000, 0, 0));
@@ -2434,8 +2341,7 @@ This is part of the file which might not contain the method in full, if thats th
                         None,
                         vec![], // previous_user_queries
                         None,
-                    )
-                    .set_should_stream_status(should_stream_edits);
+                    );
 
                     let symbol_identifier = SymbolIdentifier::new_symbol(&fs_file_path);
 
@@ -2454,57 +2360,6 @@ This is part of the file which might not contain the method in full, if thats th
                         )
                         .await? // big expectations but can also fail, we should handle it properly
                 };
-                // This code-block only ever hits for the swe-bench run and nothing else
-                // in the future we should create a tool for this, but this will help unblock us
-                if !should_stream_edits {
-                    // we want to update the whole file content with the new content over here
-                    // first we check if the file really exists on the fs, if it does not we create it
-                    if let Ok(false) = tokio::fs::try_exists(fs_file_path.to_owned()).await {
-                        tokio::fs::create_dir_all(
-                            Path::new(&fs_file_path).parent().expect("to exist"),
-                        )
-                        .await
-                        .expect("creating parent directory to work");
-                        tokio::fs::File::create(fs_file_path.to_owned())
-                            .await
-                            .expect("file creation to not fail");
-                    }
-                    let _ =
-                        tokio::fs::write(fs_file_path.to_owned(), updated_code.to_owned()).await;
-
-                    // we have the original file content and the updated code content
-                    // we want to generate a git-diff between the 2 and pass that to the LLM implicitly
-                    // since we do not have a recent-edits handle easily implemented in python mock editor
-                    // This is really bad but we are interested in testing out things for now (DO NOT COMMIT)
-                    let client = reqwest::Client::new();
-                    let original_content = &file_contents;
-                    let request_object = serde_json::json!({
-                        "original_content": original_content,
-                        "modified_content": updated_code,
-                        "fs_file_path": fs_file_path,
-                    });
-                    let response = client
-                        .post(message_properties.editor_url() + "/diff_generator")
-                        .body(serde_json::to_string(&request_object).expect("to work"))
-                        .send()
-                        .await
-                        .expect("to get a reply");
-                    #[derive(serde::Deserialize)]
-                    struct FileEditedResponseStruct {
-                        generated_diff: String,
-                    }
-                    let response: FileEditedResponseStruct =
-                        response.json().await.expect("to work");
-
-                    self = self.tool_output(
-                        &exchange_id,
-                        tool_type.clone(),
-                        format!(r#"I performed the edits which you asked for, here is the git diff for it:
-{}"#, response.generated_diff),
-                        UserContext::default()
-                    );
-                    return Ok(self);
-                }
 
                 // now that we have modified the file we can ask the editor for the git-diff of this file over here
                 // and we also have the previous state over here
@@ -2535,6 +2390,7 @@ This is part of the file which might not contain the method in full, if thats th
                         diff_changes.l1_changes()
                     ),
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
             }
             ToolInputPartial::LSPDiagnostics(diagnostics) => {
@@ -2575,6 +2431,7 @@ This is part of the file which might not contain the method in full, if thats th
                     tool_type.clone(),
                     formatted_diagnostics,
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
             }
             ToolInputPartial::ListFiles(list_files) => {
@@ -2608,6 +2465,7 @@ This is part of the file which might not contain the method in full, if thats th
                     tool_type.clone(),
                     response,
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
             }
             ToolInputPartial::OpenFile(open_file) => {
@@ -2637,6 +2495,7 @@ This is part of the file which might not contain the method in full, if thats th
                     tool_type.clone(),
                     response,
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
             }
             ToolInputPartial::SearchFileContentWithRegex(search_file) => {
@@ -2670,6 +2529,7 @@ This is part of the file which might not contain the method in full, if thats th
                     tool_type.clone(),
                     response.to_owned(),
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
             }
             ToolInputPartial::TerminalCommand(terminal_command) => {
@@ -2699,6 +2559,7 @@ This is part of the file which might not contain the method in full, if thats th
                     tool_type.clone(),
                     output,
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
             }
             ToolInputPartial::RepoMapGeneration(repo_map_request) => {
@@ -2732,6 +2593,7 @@ This is part of the file which might not contain the method in full, if thats th
                     tool_type.clone(),
                     repo_map_str.to_owned(),
                     UserContext::default(),
+                    exchange_id.to_owned(),
                 );
             }
             ToolInputPartial::CodeEditorParameters(_code_editor_parameters) => {

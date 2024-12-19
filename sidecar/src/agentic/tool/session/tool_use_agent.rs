@@ -45,6 +45,7 @@ pub struct ToolUseAgentInputOnlyTools {
     tools: Vec<serde_json::Value>,
     problem_statement: String,
     is_midwit_mode: bool,
+    pending_spawned_process_output: Option<String>,
     symbol_event_message_properties: SymbolEventMessageProperties,
 }
 
@@ -54,6 +55,7 @@ impl ToolUseAgentInputOnlyTools {
         tools: Vec<serde_json::Value>,
         problem_statement: String,
         is_midwit_mode: bool,
+        pending_spawned_process_output: Option<String>,
         symbol_event_message_properties: SymbolEventMessageProperties,
     ) -> Self {
         Self {
@@ -61,6 +63,7 @@ impl ToolUseAgentInputOnlyTools {
             tools,
             problem_statement,
             is_midwit_mode,
+            pending_spawned_process_output,
             symbol_event_message_properties,
         }
     }
@@ -114,7 +117,6 @@ pub struct ToolUseAgent {
     operating_system: String,
     shell: String,
     swe_bench_repo_name: Option<String>,
-    is_test_agent: bool,
 }
 
 impl ToolUseAgent {
@@ -124,7 +126,6 @@ impl ToolUseAgent {
         operating_system: String,
         shell: String,
         swe_bench_repo_name: Option<String>,
-        is_test_agent: bool,
     ) -> Self {
         Self {
             llm_client,
@@ -132,171 +133,56 @@ impl ToolUseAgent {
             operating_system,
             shell,
             swe_bench_repo_name,
-            is_test_agent,
         }
     }
 
-    fn system_message_for_test_agent(
-        &self,
-        context: &ToolUseAgentInput,
-        repo_name: &str,
-    ) -> String {
-        let tool_descriptions = context.tool_descriptions.join("\n");
+    fn system_message_midwit_json_with_notes(&self) -> String {
         let working_directory = self.working_directory.to_owned();
         let operating_system = self.operating_system.to_owned();
-        let default_shell = self.shell.to_owned();
+        let shell = self.shell.to_owned();
         format!(
-            r#"You are an expert software engineer who is an expert at {repo_name} and are going to help the user with a Github Issue which was opened on the repository.
-Your task is to add another test to the already present suite of tests so the github issue can be reproduced by just running the tests.
-The test generated MUST ALWAYS have enough print statements for the user to understand intermediate steps which are happening in the test, this always helps with debugging a failing test. 
-Since the user working on the Github Issue is new to the repository, they will rely on you to add the test to the right place in the repository.
-Make sure to also include extra test cases which cover the edge conditions properly for the issue which might not be present in the problem statement.
-===
+            r#"You are an expert software engineer taked with helping the developer.
+You know in detail everything about this repository and all the different code structures which are present in it source code for it.
 
-TOOL USE
+<uploaded_files>
+{working_directory}
+</uploaded_files>
+I've uploaded a python code repository in the directory {working_directory} (not in /tmp/inputs).
 
-You have access to a set of tools. You can use one tool per message (and only one), and you will receive the result of the tool use from the user. You should use the tools step-by-step to accomplish the user task.
-You use the previous information which you get from using the tools to inform your next tool usage.
-You should always output the <thinking></thinking> section before using a tool and we are showing you an example
-Your goal is pass the test patch.
+Can you help me implement the necessary changes to the repository so that the requirements specified by the user are met?
+I've also setup the developer environment in {working_directory}.
 
-# Tool Use Formatting
+Your task is to make the minimal changes to files in the {working_directory} directory to ensure the developer is satisfied.
 
-Tool use is formatted using XML-style tags. The tool name is enclosed in opening and closing tags, and each parameter is similarly enclosed within its own set of tags. Each tag is on a new line. Here's the structure:
-
-<tool_name>
-<parameter1_name>
-value1
-</parameter1_name>
-<parameter2_name>
-value2
-</parameter2_name>
-{{rest of the parameters}}
-</tool_name>
-
-As an example:
-<thinking>
-I want to read the content of bin/main.rs
-</thinking>
-<read_file>
-<fs_file_path>
-bin/main.rs
-</fs_file_path>
-</read_file>
-
-Always adhere to this format for the tool use to ensure proper parsing and execution from the tool use.
-
-# Tools
-
-{tool_descriptions}
-
-# Tool Use Guidelines
-
-1. In <thinking> tags, assess what information you already have and what information you need to proceed with the task. Your thinking should be thorough and so it's fine if it's very long.
-2. Choose the most appropriate tool based on the task and the tool descriptions provided. Assess if you need additional information to proceed, and which of the available tools would be most effective for gathering this information. For example using the list_files tool is more effective than running a command like \`ls\` in the terminal. It's critical that you think about each available tool and use the one that best fits the current step in the task.
-3. If multiple actions are needed, use one tool at a time per message to accomplish the task iteratively, with each tool use being informed by the result of the previous tool use. Do not assume the outcome of any tool use. Each step must be informed by the previous step's result.
-4. Formulate your tool use using the XML format specified for each tool.
-5. After each tool use, the user will respond with the result of that tool use. This result will provide you with the necessary information to continue your task or make further decisions. This response may include:
-  - Information about whether the tool succeeded or failed, along with any reasons for failure.
-  - Any other relevant feedback or information related to the tool use.
-
-It is crucial to proceed step-by-step, waiting for the user's message after each tool use before moving forward with the task. This approach allows you to:
-1. Adapt your approach based on new information or unexpected results.
-2. Ensure that each action builds correctly on the previous ones.
-
-By waiting for and carefully considering the user's response after each tool use, you can react accordingly and make informed decisions about how to proceed with the task. This iterative process helps ensure the overall success and accuracy of your work.
-
-====
- 
-CAPABILITIES
-
+Tool capabilities:
 - You have access to tools that let you execute CLI commands on the local checkout, list files, view source code definitions, regex search, read and write files. These tools help you effectively accomplish a wide range of tasks, such as writing code, making edits or improvements to existing files, understanding the current state of a project, and much more.
-- When the user initially gives you a task, a recursive list of all filepaths in the current working directory ({working_directory}) will be included in environment_details. This provides an overview of the project's file structure, offering key insights into the project from directory/file names (how developers conceptualize and organize their code) and file extensions (the language used). This can also guide decision-making on which files to explore further. If you need to further explore directories such as outside the current working directory, you can use the list_files tool. If you pass 'true' for the recursive parameter, it will list files recursively. Otherwise, it will list files at the top level, which is better suited for generic directories where you don't necessarily need the nested structure.
 - You can use search_files to perform regex searches across files in a specified directory, outputting context-rich results that include surrounding lines. This is particularly useful for understanding code patterns, finding specific implementations, or identifying areas that need refactoring.
-
-====
-
-RULES
-
-- Your current working directory is: {working_directory}
-- You cannot \`cd\` into a different directory to complete a task. You are stuck operating from '{working_directory}', so be sure to pass in the correct 'path' parameter when using tools that require a path.
-- When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the Github Issue you may use it to find code patterns, TODO comments, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis. For example, use it to find specific code patterns, then use read_file to examine the full context of interesting matches before using code_edit_input to make informed changes.
-- When making changes to code, always consider the context in which the code is being used. Ensure that your changes are compatible with the existing codebase and that they follow the project's coding standards and best practices.
-- Use the tools provided to write the test cases and make sure that you are able to replicate the issue provided in the problem statement.
-- NEVER end attempt_completion result with a question or request to engage in further conversation! Formulate the end of your result in a way that is final and does not require further input from the user.
-- ALWAYS start your tool use with the <thinking></thinking> section.
-- ONLY USE A SINGLE tool at a time, never use multiple tools in the same response.
-- Each xml tag should be on a new line. This is important because we are parsing the input line by line.
+- When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the developer needs you may use it to find code patterns, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis.
+- Once a file has been created using `create` on `str_replace_editor` tool, you should not keep creating the same file again and again. Focus on editing the file after it has been created.
+- You can run long running terminal commands which can run in the background, we will present you with the updated logs. This can be useful if the user wants you to start a debug server in the terminal and then look at the logs or other long running processes.
 
 ====
 
 SYSTEM INFORMATION
 
 Operating System: {operating_system}
-Default Shell: {default_shell}
+Default Shell: {shell}
 Current Working Directory: {working_directory}
-Current Repo Name: {repo_name}
 
 ====
 
-OBJECTIVE
+FOLLOW these steps to resolve the issue:
+1. As a first step, it might be a good idea to explore the repo to familiarize yourself with its structure.
+2. Open the file called notes.txt where you have previously taken notes about the repository. This will be useful for you to understand what is going on in the repository. You should reuse and make sure the knowledge here is upto date with the repository. Keep making changes to this to keep the notes up to date with your work as well.
+3. Edit the sourcecode of the repo to resolve the issue, your job is to make minimal changes.
 
-You are an expert in {repo_name} and know in detail everything about this repository and all the different code structures which are present in it source code for it.
-
-1. Analyze the Github Issue and set clear, and understand what kind of tests will help in effectively replicating the Github Issue.
-2. Remember, you have extensive capabilities with access to a wide range of tools that can be used in powerful and clever ways as necessary to accomplish each goal. Before calling a tool, do some analysis within <thinking></thinking> tags. First, analyze the file structure provided in environment_details to gain context and insights for proceeding effectively. Then, think about which of the provided tools is the most relevant tool to accomplish the user's task. Next, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, close the thinking tag and proceed with the tool use. BUT, if one of the values for a required parameter is missing.
-3. Once you've written the tests, make sure to run them to confirm that you are able to replicate the behavior in the Github Issue.
-4. The test MUST ALWAYS have print statements and comments to help explain how the test replicates the issue. The print statements are important to see intermediate steps which are happening in the test (this is also how every developer debugs failing tests, by print statements).
-5. You can ONLY USE 1 TOOL in each step and not multiple tools, using multiple tools is not allowed.
-6. ONLY ATTEMPT COMPLETION if you have finished writing the tests which faitfully replicate the Github Issue.
-7. You have to present proof to the user that the tests faitfully replicate the Github Issue by presenting the failing tests and their output.
-8. Make sure that the test is FAILING so the user is able to replicate the issue easily on their end. Passing tests do not showcase the failing behavior of the Github Issue."#
+Your thinking should be thorough and so it's fine if it's very long.
+This is super important and before using any tool you have to output your thinking in <thinking> section like this:'
+<thinking>
+{{your thoughts about using the tool}}
+</thinking>
+NEVER forget to include the <thinking></thinking> section before using a tool. We will not be able to invoke the tool properly if you forget it"#
         )
-    }
-
-    fn system_message_for_critique(&self, _context: &ToolUseAgentInput, repo_name: &str) -> String {
-        format!(
-            r#"You are an expert software engineer who is an expert at {repo_name} and are reviewing the work of another junior engineer.
-Your goal is to faithfully represent the assumptions of the junior engineer and hypothesize about how it lead to failure.
-The junior engineer is looking for an objective and scientific debrief that will help them attemp a more accurate solution next time.
-The problem is a Github Issue on {repo_name}
-===
-
-## INPUT PROVIDED
-- You will be provided with a very clear list of the steps which the junior engineer took.
-- The junior engineer is very literal with the steps they have taken and they also show you the thinking before taking an action.
-- At the very end you will also see the Test Output which shows the failing stack trace. Use this to inform your critique.
-
-## OUTPUT REQUIRED
-- You have to give feedback to the junior engineer which they will take to heart and follow to the letter.
-- Be short and concise in your feedback and point out the wrong assumptions they might have made.
-- You are an expert and the junior engineer wants the feedback from you, so please be thorough with your feedback so they are able to solve the Github Issue.
-- You are never to tell the junior engineer the final solution, but guide them towards the right answer by challenging their assumptions and any wrong conclusions they might have drawn."#
-        )
-    }
-
-    fn user_message_for_critique(&self, context: &ToolUseAgentInput) -> String {
-        context
-            .session_messages
-            .iter()
-            .map(|session_message| match session_message.role() {
-                SessionChatRole::User => {
-                    format!(
-                        r#"Tool output:
-{}"#,
-                        session_message.message().to_owned()
-                    )
-                }
-                SessionChatRole::Assistant => {
-                    format!(
-                        r#"Tool Input:
-{}"#,
-                        session_message.message().to_owned()
-                    )
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
     }
 
     fn system_message_midwit_json_mode(&self, repo_name: &str, problem_statement: &str) -> String {
@@ -588,7 +474,17 @@ bin/main.rs
 </fs_file_path>
 </read_file>
 
-Always adhere to this format for the tool use to ensure proper parsing and execution from the tool use.
+Another example:
+<list_files>
+<path>
+.
+</path>
+<recursive>
+true
+</recursive>
+</list_files>
+
+Always adhere to this format for the tool use to ensure proper parsing and execution from the tool use. And NOTICE HOW ALL XML TAGS ARE ON A NEW LINE. This is important to not break parsing.
 
 # Tools
 
@@ -674,63 +570,221 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
         )
     }
 
-    pub async fn invoke_critique(&self, input: ToolUseAgentInput) -> Result<String, SymbolError> {
-        let system_message = LLMClientMessage::system(
-            if let Some(repo_name) = self.swe_bench_repo_name.as_ref() {
-                self.system_message_for_critique(&input, repo_name)
-            } else {
-                panic!("We should not be hitting this branch condition at all, something went wrong upstream")
-            },
-        );
-        let user_message = LLMClientMessage::user(self.user_message_for_critique(&input));
-        let final_messages = vec![system_message, user_message];
+    /// Use this when invoking the agent for the normal tool use flow
+    pub async fn invoke_json_tool_use(
+        &self,
+        input: ToolUseAgentInputOnlyTools,
+    ) -> Result<ToolUseAgentOutputWithTools, SymbolError> {
+        let system_message = LLMClientMessage::system(self.system_message_midwit_json_with_notes())
+            .insert_tools(input.tools);
+
+        // grab the previous messages as well
         let llm_properties = input
             .symbol_event_message_properties
             .llm_properties()
             .clone();
+        let mut previous_messages = input
+            .session_messages
+            .into_iter()
+            .map(|session_message| {
+                let role = session_message.role();
+                let tool_use = session_message.tool_use();
+                match role {
+                    SessionChatRole::User => {
+                        LLMClientMessage::user(session_message.message().to_owned())
+                            .with_images(
+                                session_message
+                                    .images()
+                                    .into_iter()
+                                    .map(|session_image| session_image.to_llm_image())
+                                    .collect(),
+                            )
+                            .insert_tool_return_values(
+                                session_message
+                                    .tool_return()
+                                    .into_iter()
+                                    .map(|tool_return| tool_return.to_llm_tool_return())
+                                    .collect(),
+                            )
+                    }
+                    SessionChatRole::Assistant => {
+                        LLMClientMessage::assistant(session_message.message().to_owned())
+                            .insert_tool_use_values(
+                                tool_use
+                                    .into_iter()
+                                    .map(|tool_use| tool_use.to_llm_tool_use())
+                                    .collect(),
+                            )
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let mut cache_points_set = 0;
+        let cache_points_allowed = 3;
+        previous_messages
+            .iter_mut()
+            .rev()
+            .into_iter()
+            .for_each(|message| {
+                if cache_points_set >= cache_points_allowed {
+                    return;
+                }
+                if message.is_human_message() {
+                    message.set_cache_point();
+                    cache_points_set = cache_points_set + 1;
+                }
+            });
+
+        // TODO(skcd): This will not work since we have to grab the pending spawned process output here properly
+        if previous_messages
+            .last()
+            .map(|last_message| last_message.is_human_message())
+            .unwrap_or_default()
+        {
+            if let Some(pending_spawned_process_output) = input.pending_spawned_process_output {
+                previous_messages.push(LLMClientMessage::user(format!(
+                    r#"<executed_terminal_output>
+{}
+</executed_terminal_output>"#,
+                    pending_spawned_process_output
+                )));
+            }
+        }
+
         let root_request_id = input
             .symbol_event_message_properties
             .root_request_id()
             .to_owned();
+        let final_messages: Vec<_> = vec![system_message]
+            .into_iter()
+            .chain(previous_messages)
+            .collect::<Vec<_>>();
+
         let cancellation_token = input.symbol_event_message_properties.cancellation_token();
-        let cloned_llm_client = self.llm_client.clone();
+
         let (sender, _receiver) = tokio::sync::mpsc::unbounded_channel();
         let cloned_root_request_id = root_request_id.to_owned();
         let response = run_with_cancellation(
             cancellation_token.clone(),
             tokio::spawn(async move {
-                cloned_llm_client
-                    .stream_completion(
-                        llm_properties.api_key().clone(),
-                        LLMClientCompletionRequest::new(
-                            llm_properties.llm().clone(),
-                            final_messages,
-                            0.2,
-                            None,
-                        ),
-                        llm_properties.provider().clone(),
-                        vec![
-                            ("event_type".to_owned(), "critique".to_owned()),
-                            ("root_id".to_owned(), cloned_root_request_id),
-                        ]
-                        .into_iter()
-                        .collect(),
-                        sender,
-                    )
-                    .await
+                if llm_properties.provider().is_anthropic_api_key() {
+                    AnthropicClient::new()
+                        .stream_completion_with_tool(
+                            llm_properties.api_key().clone(),
+                            LLMClientCompletionRequest::new(
+                                llm_properties.llm().clone(),
+                                final_messages,
+                                0.2,
+                                None,
+                            ),
+                            // llm_properties.provider().clone(),
+                            vec![
+                                ("event_type".to_owned(), "tool_use".to_owned()),
+                                ("root_id".to_owned(), cloned_root_request_id),
+                            ]
+                            .into_iter()
+                            .collect(),
+                            sender,
+                        )
+                        .await
+                } else {
+                    OpenRouterClient::new()
+                        .stream_completion_with_tool(
+                            llm_properties.api_key().clone(),
+                            LLMClientCompletionRequest::new(
+                                llm_properties.llm().clone(),
+                                final_messages,
+                                0.2,
+                                None,
+                            ),
+                            // llm_properties.provider().clone(),
+                            vec![
+                                ("event_type".to_owned(), "tool_use".to_owned()),
+                                ("root_id".to_owned(), cloned_root_request_id),
+                            ]
+                            .into_iter()
+                            .collect(),
+                            sender,
+                        )
+                        .await
+                }
             }),
         )
         .await;
-        match response {
-            Some(Ok(Ok(response))) => Ok(response),
-            // fix the error variant over here later on
-            _ => Err(SymbolError::SnippetNotFound),
+
+        println!("tool_use_agent::invoke_json_tool");
+        if let Some(Ok(Ok(response))) = response {
+            println!("tool_use_agent::invoke_json_tool::reply({:?})", &response);
+            // we will have a string here representing the thinking and another with the various tool inputs and their json representation
+            let thinking = response.0;
+            let tool_inputs = response.1;
+            let mut tool_inputs_parsed = vec![];
+            for (tool_type, tool_input) in tool_inputs.into_iter() {
+                let tool_use_id = tool_input.0;
+                let tool_input = tool_input.1;
+                let tool_input = match tool_type.as_ref() {
+                    "list_files" => ToolInputPartial::ListFiles(
+                        serde_json::from_str::<ListFilesInput>(&tool_input).map_err(|_e| {
+                            SymbolError::ToolError(ToolError::SerdeConversionFailed)
+                        })?,
+                    ),
+                    "search_files" => ToolInputPartial::SearchFileContentWithRegex(
+                        serde_json::from_str::<SearchFileContentInputPartial>(&tool_input)
+                            .map_err(|_e| {
+                                SymbolError::ToolError(ToolError::SerdeConversionFailed)
+                            })?,
+                    ),
+                    "read_file" => ToolInputPartial::OpenFile(
+                        serde_json::from_str::<OpenFileRequestPartial>(&tool_input).map_err(
+                            |_e| SymbolError::ToolError(ToolError::SerdeConversionFailed),
+                        )?,
+                    ),
+                    "execute_command" => ToolInputPartial::TerminalCommand({
+                        serde_json::from_str::<TerminalInputPartial>(&tool_input)
+                            .map_err(|_e| SymbolError::ToolError(ToolError::SerdeConversionFailed))?
+                            // well gotta do the hard things sometimes right?
+                            // or the dumb things
+                            .sanitise_for_repro_script()
+                    }),
+                    "attempt_completion" => ToolInputPartial::AttemptCompletion(
+                        serde_json::from_str::<AttemptCompletionClientRequest>(&tool_input)
+                            .map_err(|_e| {
+                                SymbolError::ToolError(ToolError::SerdeConversionFailed)
+                            })?,
+                    ),
+                    "test_runner" => ToolInputPartial::TestRunner(
+                        serde_json::from_str::<TestRunnerRequestPartial>(&tool_input).map_err(
+                            |_e| SymbolError::ToolError(ToolError::SerdeConversionFailed),
+                        )?,
+                    ),
+                    "str_replace_editor" => ToolInputPartial::CodeEditorParameters(
+                        serde_json::from_str::<CodeEditorParameters>(&tool_input).map_err(|e| {
+                            println!("str_replace_editor::error::{:?}", e);
+                            SymbolError::ToolError(ToolError::SerdeConversionFailed)
+                        })?,
+                    ),
+                    _ => {
+                        println!("unknow tool found: {}", tool_type);
+                        return Err(SymbolError::WrongToolOutput);
+                    }
+                };
+                tool_inputs_parsed.push((tool_use_id, tool_input));
+            }
+
+            Ok(ToolUseAgentOutputWithTools::Success((
+                tool_inputs_parsed,
+                // trim the string properly so we remove all the \n
+                thinking.trim().to_owned(),
+            )))
+        } else {
+            Ok(ToolUseAgentOutputWithTools::Failure(None))
         }
     }
 
     /// TODO(skcd): This is a special call we are using only for anthropic and nothing
     /// else right now
-    pub async fn invoke_json_tool(
+    pub async fn invoke_json_tool_swe_bench(
         &self,
         input: ToolUseAgentInputOnlyTools,
     ) -> Result<ToolUseAgentOutputWithTools, SymbolError> {
@@ -742,6 +796,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
             self.system_message_for_swe_bench_json_mode(&repo_name)
         })
         .insert_tools(input.tools);
+
         // grab the previous messages as well
         let llm_properties = input
             .symbol_event_message_properties
@@ -930,11 +985,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
         // this will involve some kind of magic because for each tool type we want to be sure about how we are parsing the output but it should not be too hard to make that happen
         let system_message =
             LLMClientMessage::system(if let Some(repo_name) = self.swe_bench_repo_name.as_ref() {
-                if self.is_test_agent {
-                    self.system_message_for_test_agent(&input, repo_name)
-                } else {
-                    self.system_message_for_swe_bench(&input, repo_name)
-                }
+                self.system_message_for_swe_bench(&input, repo_name)
             } else {
                 self.system_message(&input)
             })

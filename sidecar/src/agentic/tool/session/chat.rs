@@ -153,6 +153,16 @@ impl SessionChatMessage {
         }
     }
 
+    pub fn insert_tool_return_value(mut self, tool_return: SessionChatToolReturn) -> Self {
+        self.tool_return.push(tool_return);
+        self
+    }
+
+    pub fn insert_tool_use(mut self, tool_use: SessionChatToolUse) -> Self {
+        self.tool_use.push(tool_use);
+        self
+    }
+
     pub fn message(&self) -> &str {
         &self.message
     }

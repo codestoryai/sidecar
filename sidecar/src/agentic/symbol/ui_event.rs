@@ -720,20 +720,6 @@ impl UIEventWithID {
         }
     }
 
-    pub fn tool_output_type_found(
-        session_id: String,
-        exchange_id: String,
-        tool_type: ToolType,
-    ) -> Self {
-        Self {
-            request_id: session_id.to_owned(),
-            exchange_id,
-            event: UIEvent::FrameworkEvent(FrameworkEvent::ToolOutput(
-                ToolOutputEvent::ToolTypeForOutput(ToolTypeForOutputEvent { tool_type }),
-            )),
-        }
-    }
-
     pub fn tool_output_delta_response(
         session_id: String,
         exchange_id: String,
