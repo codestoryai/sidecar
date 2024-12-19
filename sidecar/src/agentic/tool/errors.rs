@@ -85,4 +85,11 @@ pub enum ToolError {
 
     #[error("Readline error")]
     ReadLineError,
+
+    // Newly added error variants for integration tool usage
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+
+    #[error("Invocation error: {0}")]
+    InvocationError(String),
 }
