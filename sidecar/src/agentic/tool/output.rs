@@ -1,6 +1,7 @@
 //! Contains the output of a tool which can be used by any of the callers
 
 use crate::agentic::symbol::ui_event::RelevantReference;
+use crate::agentic::tool::mcp::integration_tool::MCPIntegrationToolResponse;
 
 use super::{
     code_edit::{
@@ -226,6 +227,7 @@ pub enum ToolOutput {
     RewardGeneration(RewardGenerationResponse),
     // Feedback generation
     FeedbackGeneration(FeedbackGenerationResponse),
+    MCPIntegration(MCPIntegrationToolResponse),
 }
 
 impl ToolOutput {
