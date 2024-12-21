@@ -1,14 +1,14 @@
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::{collections::HashMap, sync::Arc};
 use crate::agentic::tool::{
     errors::ToolError,
     input::ToolInput,
     output::ToolOutput,
     r#type::{Tool, ToolRewardScale},
 };
+use async_trait::async_trait;
 use mcp_client_rs::client::Client;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolDescriptor {
@@ -66,11 +66,11 @@ impl MCPIntegrationToolQuery {
 }
 
 pub struct MCPIntegrationToolBroker {
-    servers: HashMap<String, Arc<Client>>,
+    servers: HashMap<String, Client>,
 }
 
 impl MCPIntegrationToolBroker {
-    pub fn new(servers: HashMap<String, Arc<Client>>) -> Self {
+    pub fn new(servers: HashMap<String, Client>) -> Self {
         Self { servers }
     }
 
@@ -84,29 +84,14 @@ impl MCPIntegrationToolBroker {
                 ))
             })?;
 
-            let tools_array = tools_value
-                .get("tools")
-                .and_then(Value::as_array)
-                .ok_or_else(|| {
-                    ToolError::InvocationError("Missing 'tools' array in response".to_string())
-                })?;
+            let tools_array = tools_value.tools;
 
             let mut tool_descriptors = Vec::new();
-            for t in tools_array {
-                let name = t
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default()
-                    .to_string();
-                let description = t
-                    .get("description")
-                    .and_then(Value::as_str)
-                    .map(|s| s.to_string());
-                let schema = t.get("schema").cloned();
+            for tool in tools_array {
                 tool_descriptors.push(ToolDescriptor {
-                    name,
-                    description,
-                    schema,
+                    name: tool.name,
+                    description: Some(tool.description),
+                    schema: Some(tool.schema),
                 });
             }
 
@@ -135,7 +120,9 @@ impl MCPIntegrationToolBroker {
             .map_err(|e| ToolError::InvocationError(format!("call_tool failed: {}", e)))?;
 
         Ok(MCPIntegrationToolResponse::ToolCall(ToolCallResponse {
-            result: res,
+            result: serde_json::to_value(res).map_err(|e| {
+                ToolError::InvocationError(format!("Failed to serialize tool result: {}", e))
+            })?,
         }))
     }
 

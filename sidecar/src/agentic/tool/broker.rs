@@ -484,29 +484,24 @@ impl ToolBroker {
             Box::new(FeedbackClientGenerator::new(llm_client)),
         );
 
-        // Try to set up MCP integration if config exists
-        match setup_mcp_clients() {
-            Ok(clients) => {
-                // Only insert the MCPIntegrationTool if we successfully created clients
-                if !clients.is_empty() {
-                    tools.insert(
-                        ToolType::MCPIntegrationTool,
-                        Box::new(
-                            crate::agentic::tool::mcp::integration_tool::MCPIntegrationToolBroker::new(
-                                clients,
-                            ),
-                        ),
-                    );
-                }
-            }
-            Err(e) => {
-                // Log the error but continue without MCP integration
-                eprintln!("Failed to initialize MCP clients: {}", e);
-            }
-        };
-
-        // we also want to add the re-ranking tool here, so we invoke it freely
         Self { tools }
+    }
+
+    /// Initialize MCP support for the ToolBroker.
+    /// This is optional and can be called after creation if MCP support is needed.
+    pub async fn with_mcp(mut self) -> anyhow::Result<Self> {
+        let clients = setup_mcp_clients().await?;
+        if !clients.is_empty() {
+            self.tools.insert(
+                ToolType::MCPIntegrationTool,
+                Box::new(
+                    crate::agentic::tool::mcp::integration_tool::MCPIntegrationToolBroker::new(
+                        clients,
+                    ),
+                ),
+            );
+        }
+        Ok(self)
     }
 
     pub fn get_tool_description(&self, tool_type: &ToolType) -> Option<String> {
@@ -599,35 +594,30 @@ impl ToolBroker {
 #[derive(Deserialize)]
 struct ServerConfig {
     command: String,
+    #[serde(default)]
     args: Vec<String>,
+    #[serde(default)]
     env: HashMap<String, String>,
 }
 
 #[derive(Deserialize)]
 pub struct RootConfig {
+    #[serde(rename = "mcpServers")]
     mcp_servers: HashMap<String, ServerConfig>,
 }
 
-fn setup_mcp_clients() -> anyhow::Result<HashMap<String, Client>> {
-    // unsure if we should use Arc ??? dont know full context of how tools get used
-
+async fn setup_mcp_clients() -> anyhow::Result<HashMap<String, Client>> {
     let config_path = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?
         .join(".aide/config.json");
 
-    // Return early if config doesn't exist
     if !config_path.exists() {
         return Ok(HashMap::new());
     }
 
-    let rt = tokio::runtime::Runtime::new().context("Failed to create Tokio runtime")?;
-
-    let config_str = rt.block_on(async {
-        fs::read_to_string(&config_path)
-            .await
-            .context("Failed to read ~/.aide/config.json")
-    })?;
-
+    let config_str = fs::read_to_string(&config_path)
+        .await
+        .context("Failed to read ~/.aide/config.json")?;
     let root_config: RootConfig =
         serde_json::from_str(&config_str).context("Failed to parse ~/.aide/config.json")?;
 
@@ -642,22 +632,17 @@ fn setup_mcp_clients() -> anyhow::Result<HashMap<String, Client>> {
             builder = builder.env(k, v);
         }
 
-        match rt.block_on(async {
-            builder
-                .spawn_and_initialize()
-                .await
-                .with_context(|| format!("Failed to spawn MCP client for server '{}'", server_name))
-        }) {
+        match builder.spawn_and_initialize().await {
             Ok(client) => {
                 mcp_clients_map.insert(server_name.clone(), client);
+                eprintln!("Initialized MCP client for '{}'", server_name);
             }
             Err(e) => {
                 eprintln!(
                     "Failed to initialize MCP client for '{}': {}",
                     server_name, e
                 );
-                // Continue with other clients
-                continue;
+                // continue trying other clients
             }
         }
     }
