@@ -26,7 +26,6 @@ Broadly speaking these are the following important bits in Sidecar:
 - `tool_box.rs` - The collection of all and any tools AI might need is present here, all the language specific smartness is handled by `tool_box.rs`
 - `symbol/` - The symbol folder contains the code which allows each individual symbol to be smart and independent. This can work on any granularity level, all the way from a file to a single function or function inside a class (its very versatile)
 - `llm_prompts/` - This is a relic of the past (and somewhat in use still) for creating prompts especially for the inline completion bits. The inline completions bits are not maintained any longer but if you want to take a stab at working on it, please reach out to us on Discord, we are happy to support you.
-- `semantic_search/` && `git` && `embedder` - These parts are heavily borrowed from Bloop (check them out!). We are not running any of this anymore (moved away from embedding based search), the plan is to redo the work and figure out better ways to make this work.
 - `repomap` - This creates a repository map using page rank on the code symbols. Most of the code here is a port of the python implementation done on Aider (do check it out if you are in the market for a CLI tool for code-generation)
 
 ## Getting Started

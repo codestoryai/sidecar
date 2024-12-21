@@ -1354,54 +1354,67 @@ impl ApiResponse for AgenticVerifyModelConfigResponse {}
 pub async fn verify_model_config(
     Extension(app): Extension<Application>,
     Json(AgenticVerifyModelConfig {
-        model_configuration,
+        model_configuration: _,
     }): Json<AgenticVerifyModelConfig>,
 ) -> Result<impl IntoResponse> {
-    let llm_provider = model_configuration.llm_properties_for_slow_model();
+    // short-circuiting the reply here
+    return Ok(Json(AgenticVerifyModelConfigResponse {
+        valid: true,
+        error: None,
+    }));
 
-    match llm_provider {
-        Some(llm_provider) => {
-            // send a dummy request over here to the llm providers checking the validity
-            let llm_broker = app.llm_broker.clone();
-            let api_key = llm_provider.api_key().clone();
-            let provider = llm_provider.provider().clone();
-            let (sender, _receiver) = tokio::sync::mpsc::unbounded_channel();
-            let response = llm_broker.stream_completion(api_key, LLMClientCompletionRequest::new(
-                llm_provider.llm().clone(),
-                vec![LLMClientMessage::user("only say hi back and nothing else, this is to check the validity of the api key".to_owned())],
-                0.0,
-                None,
-            ), provider, vec![("event_type".to_owned(), "validation".to_owned())].into_iter().collect(), sender).await;
+    // TODO(skcd): Enable this after we have figured out a better way than
+    // just pinging this all the time and caching the results on the editor
+    // let llm_provider = model_configuration.llm_properties_for_slow_model();
+    // match llm_provider {
+    //     Some(llm_provider) => {
+    //         if llm_provider.provider().is_codestory() {
+    //             return Ok(Json(AgenticVerifyModelConfigResponse {
+    //                 valid: true,
+    //                 error: None,
+    //             }));
+    //         }
+    //         // send a dummy request over here to the llm providers checking the validity
+    //         let llm_broker = app.llm_broker.clone();
+    //         let api_key = llm_provider.api_key().clone();
+    //         let provider = llm_provider.provider().clone();
+    //         let (sender, _receiver) = tokio::sync::mpsc::unbounded_channel();
+    //         let response = llm_broker.stream_completion(api_key, LLMClientCompletionRequest::new(
+    //             llm_provider.llm().clone(),
+    //             vec![LLMClientMessage::user("only say hi back and nothing else, this is to check the validity of the api key".to_owned())],
+    //             0.0,
+    //             None,
+    //         ), provider, vec![("event_type".to_owned(), "validation".to_owned())].into_iter().collect(), sender).await;
 
-            match response {
-                Ok(response) => {
-                    if response.is_empty() {
-                        Ok(Json(AgenticVerifyModelConfigResponse {
-                            valid: false,
-                            error:
-                                Some("No response from provider, please check your api-keys and settings"
-                                    .to_owned()),
-                        }))
-                    } else {
-                        Ok(Json(AgenticVerifyModelConfigResponse {
-                            valid: true,
-                            error: None,
-                        }))
-                    }
-                }
-                Err(e) => Ok(Json(AgenticVerifyModelConfigResponse {
-                    valid: false,
-                    error: Some(e.to_string()),
-                })),
-            }
-        }
-        None => {
-            return Ok(Json(AgenticVerifyModelConfigResponse {
-                valid: false,
-                error: None,
-            }))
-        }
-    }
+    //         match response {
+    //             Ok(response) => {
+    //                 if response.is_empty() {
+    //                     Ok(Json(AgenticVerifyModelConfigResponse {
+    //                         valid: false,
+    //                         error:
+    //                             Some("No response from provider, please check your api-keys and settings"
+    //                                 .to_owned()),
+    //                     }))
+    //                 } else {
+    //                     Ok(Json(AgenticVerifyModelConfigResponse {
+    //                         valid: true,
+    //                         error: None,
+    //                     }))
+    //                 }
+    //             }
+    //             Err(e) => Ok(Json(AgenticVerifyModelConfigResponse {
+    //                 valid: false,
+    //                 error: Some(e.to_string()),
+    //             })),
+    //         }
+    //     }
+    //     None => {
+    //         return Ok(Json(AgenticVerifyModelConfigResponse {
+    //             valid: false,
+    //             error: None,
+    //         }))
+    //     }
+    // }
 }
 
 pub async fn agent_tool_use(
@@ -1441,6 +1454,7 @@ pub async fn agent_tool_use(
     let cancellation_token = tokio_util::sync::CancellationToken::new();
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
     // check if model and provider combo supports tool use and midwit agent use
+    // let is_midwit_tool_agent = llm_provider.supports_midwit_and_tool_use();
     let is_midwit_tool_agent = llm_provider.supports_midwit_and_tool_use();
     let message_properties = SymbolEventMessageProperties::new(
         SymbolEventRequestId::new(exchange_id.to_owned(), session_id.to_string()),

@@ -7,6 +7,7 @@ use llm_client::{
     broker::LLMBroker,
     clients::{
         anthropic::AnthropicClient,
+        codestory::CodeStoryClient,
         open_router::OpenRouterClient,
         types::{LLMClientCompletionRequest, LLMClientMessage},
     },
@@ -147,7 +148,7 @@ You know in detail everything about this repository and all the different code s
 <uploaded_files>
 {working_directory}
 </uploaded_files>
-I've uploaded a python code repository in the directory {working_directory} (not in /tmp/inputs).
+I've uploaded a code repository in the directory {working_directory} (not in /tmp/inputs).
 
 Can you help me implement the necessary changes to the repository so that the requirements specified by the user are met?
 I've also setup the developer environment in {working_directory}.
@@ -160,7 +161,8 @@ Tool capabilities:
 - When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the developer needs you may use it to find code patterns, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis.
 - Once a file has been created using `create` on `str_replace_editor` tool, you should not keep creating the same file again and again. Focus on editing the file after it has been created.
 - You can run long running terminal commands which can run in the background, we will present you with the updated logs. This can be useful if the user wants you to start a debug server in the terminal and then look at the logs or other long running processes.
-
+- If the `create` command on `str_replace_editor` shows up as success you do not need to view it again.
+- Use the `execute_command` to run terminal command for the user, this can be especially useful for running a debug server, or a test script or a docker container.
 ====
 
 SYSTEM INFORMATION
@@ -173,15 +175,12 @@ Current Working Directory: {working_directory}
 
 FOLLOW these steps to resolve the issue:
 1. As a first step, it might be a good idea to explore the repo to familiarize yourself with its structure.
-2. Open the file called notes.txt where you have previously taken notes about the repository. This will be useful for you to understand what is going on in the repository. You should reuse and make sure the knowledge here is upto date with the repository. Keep making changes to this to keep the notes up to date with your work as well.
-3. Edit the sourcecode of the repo to resolve the issue, your job is to make minimal changes.
+2. Once you have understood the repository structure being by making minimal edits to make sure that the user request is answered. The user request could also be about understanding the codebase in which case you don't need to make any edits.
+3. Once you have made the edits it is important that you look at the diagnostic messages which might be present so you can fix any errors or bugs which you have introduced.
+4. You also have access to the terminal, you should ALWAYS run commands from the {working_directory} (any command run outside this directory will lead to errors)
+5. Once you have done everything to help the user out, use attempt_completion to summarise what you have done and end the task assigned to you by the user.
 
-Your thinking should be thorough and so it's fine if it's very long.
-This is super important and before using any tool you have to output your thinking in <thinking> section like this:'
-<thinking>
-{{your thoughts about using the tool}}
-</thinking>
-NEVER forget to include the <thinking></thinking> section before using a tool. We will not be able to invoke the tool properly if you forget it"#
+Your thinking should be thorough and so it's fine if it's very long."#
         )
     }
 
@@ -575,6 +574,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
         &self,
         input: ToolUseAgentInputOnlyTools,
     ) -> Result<ToolUseAgentOutputWithTools, SymbolError> {
+        println!("tool_use_agent::invoke_json_tool_use_prompt");
         let system_message = LLMClientMessage::system(self.system_message_midwit_json_with_notes())
             .insert_tools(input.tools);
 
@@ -688,6 +688,28 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
                             sender,
                         )
                         .await
+                } else if llm_properties.provider().is_codestory() {
+                    CodeStoryClient::new(
+                        "https://codestory-provider-dot-anton-390822.ue.r.appspot.com",
+                    )
+                    .stream_completion_with_tool(
+                        llm_properties.api_key().clone(),
+                        LLMClientCompletionRequest::new(
+                            llm_properties.llm().clone(),
+                            final_messages,
+                            0.2,
+                            None,
+                        ),
+                        // llm_properties.provider().clone(),
+                        vec![
+                            ("event_type".to_owned(), "tool_use".to_owned()),
+                            ("root_id".to_owned(), cloned_root_request_id),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        sender,
+                    )
+                    .await
                 } else {
                     OpenRouterClient::new()
                         .stream_completion_with_tool(
@@ -778,7 +800,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
                 thinking.trim().to_owned(),
             )))
         } else {
-            Ok(ToolUseAgentOutputWithTools::Failure(None))
+            Err(SymbolError::CancelledResponseStream)
         }
     }
 
@@ -1213,6 +1235,20 @@ pub struct ToolParameters {
     pub(crate) field_name: String,
     pub(crate) field_content_up_until_now: String,
     pub(crate) field_content_delta: String,
+}
+
+impl ToolParameters {
+    pub fn new(
+        field_name: String,
+        field_content_up_until_now: String,
+        field_content_delta: String,
+    ) -> Self {
+        Self {
+            field_name,
+            field_content_delta,
+            field_content_up_until_now,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

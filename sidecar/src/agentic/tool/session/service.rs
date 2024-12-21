@@ -544,7 +544,11 @@ impl SessionService {
                     ToolType::ListFiles,
                     ToolType::SearchFileContentWithRegex,
                     ToolType::OpenFile,
-                    ToolType::CodeEditing,
+                    if is_midwit_tool_agent {
+                        ToolType::CodeEditorTool
+                    } else {
+                        ToolType::CodeEditing
+                    },
                     ToolType::LSPDiagnostics,
                     // disable for testing
                     ToolType::AskFollowupQuestions,
@@ -600,18 +604,31 @@ impl SessionService {
             self.track_exchange(&session_id, &tool_exchange_id, cancellation_token.clone())
                 .await;
 
-            let tool_use_output = session
-                // the clone here is pretty bad but its the easiest and the sanest
-                // way to keep things on the happy path
-                .clone()
-                .get_tool_to_use(
-                    tool_box.clone(),
-                    tool_exchange_id.to_owned(),
-                    exchange_id.to_owned(),
-                    tool_agent.clone(),
-                    message_properties.clone(),
-                )
-                .await;
+            let tool_use_output = if is_midwit_tool_agent {
+                session
+                    .clone()
+                    .get_tool_to_use_json(
+                        tool_box.clone(),
+                        tool_exchange_id.to_owned(),
+                        exchange_id.to_owned(),
+                        tool_agent.clone(),
+                        message_properties.clone(),
+                    )
+                    .await
+            } else {
+                session
+                    // the clone here is pretty bad but its the easiest and the sanest
+                    // way to keep things on the happy path
+                    .clone()
+                    .get_tool_to_use(
+                        tool_box.clone(),
+                        tool_exchange_id.to_owned(),
+                        exchange_id.to_owned(),
+                        tool_agent.clone(),
+                        message_properties.clone(),
+                    )
+                    .await
+            };
 
             println!("tool_use_output::{:?}", tool_use_output);
 
@@ -622,162 +639,17 @@ impl SessionService {
                     // store to disk
                     let _ = self.save_to_storage(&session).await;
                     let tool_type = tool_input_partial.to_tool_type();
-                    session = session
-                        .invoke_tool(
-                            tool_type.clone(),
-                            tool_input_partial,
-                            tool_box.clone(),
-                            root_directory.to_owned(),
-                            message_properties.clone(),
-                        )
-                        .await?;
-
-                    let _ = self.save_to_storage(&session).await;
-                    if matches!(tool_type, ToolType::AskFollowupQuestions)
-                        || matches!(tool_type, ToolType::AttemptCompletion)
-                    {
-                        // we break if it is any of these 2 events, since these
-                        // require the user to intervene
-                        println!("session_service::tool_use_agentic::reached_terminating_tool");
-                        break;
+                    if !is_midwit_tool_agent {
+                        session = session
+                            .invoke_tool(
+                                tool_type.clone(),
+                                tool_input_partial,
+                                tool_box.clone(),
+                                root_directory.to_owned(),
+                                message_properties.clone(),
+                            )
+                            .await?;
                     }
-                }
-                Ok(AgentToolUseOutput::Cancelled) => {
-                    // if it is cancelled then we should break
-                    break;
-                }
-                Ok(AgentToolUseOutput::Failed(failed_to_parse_output)) => {
-                    let human_message = format!(
-                        r#"Your output was incorrect, please give me the output in the correct format:
-{}"#,
-                        failed_to_parse_output.to_owned()
-                    );
-                    human_message_ticker = human_message_ticker + 1;
-                    session = session.human_message(
-                        human_message_ticker.to_string(),
-                        human_message,
-                        UserContext::default(),
-                        vec![],
-                        repo_ref.clone(),
-                    );
-                    let _ = message_properties
-                        .ui_sender()
-                        .send(UIEventWithID::tool_not_found(
-                            session_id.to_owned(),
-                            tool_exchange_id.to_owned(),
-                            "Failed to get tool output".to_owned(),
-                        ));
-                }
-                Err(e) => {
-                    let _ = message_properties
-                        .ui_sender()
-                        .send(UIEventWithID::tool_not_found(
-                            session_id.to_owned(),
-                            tool_exchange_id.to_owned(),
-                            e.to_string(),
-                        ));
-                    Err(e)?
-                }
-            }
-        }
-        Ok(())
-    }
-
-    /// Use the tool based json mode over here
-    async fn tool_use_midwit_json_mode(
-        &self,
-        mut session: Session,
-        session_id: String,
-        storage_path: String,
-        user_message: String,
-        exchange_id: String,
-        all_files: Vec<String>,
-        open_files: Vec<String>,
-        shell: String,
-        project_labels: Vec<String>,
-        repo_ref: RepoRef,
-        root_directory: String,
-        tool_box: Arc<ToolBox>,
-        llm_broker: Arc<LLMBroker>,
-        user_context: UserContext,
-        is_midwit_tool_agent: bool,
-        mut message_properties: SymbolEventMessageProperties,
-    ) -> Result<(), SymbolError> {
-        // os can be passed over here safely since we can assume the sidecar is running
-        // close to the vscode server
-        // we should ideally get this information from the vscode-server side setting
-        let tool_agent = ToolUseAgent::new(
-            llm_broker.clone(),
-            root_directory.to_owned(),
-            std::env::consts::OS.to_owned(),
-            shell.to_owned(),
-            None,
-        );
-
-        session = session.human_message_tool_use(
-            exchange_id.to_owned(),
-            user_message.to_owned(),
-            all_files,
-            open_files,
-            shell,
-            user_context,
-        );
-        let _ = self.save_to_storage(&session).await;
-
-        session = session.accept_open_exchanges_if_any(message_properties.clone());
-        let mut human_message_ticker = 0;
-        // now that we have saved it we can start the loop over here and look out for the cancellation
-        // token which will imply that we should end the current loop
-        loop {
-            let _ = self.save_to_storage(&session).await;
-            let tool_exchange_id = self
-                .tool_box
-                .create_new_exchange(session_id.to_owned(), message_properties.clone())
-                .await?;
-
-            println!("tool_exchange_id::({:?})", &tool_exchange_id);
-
-            let cancellation_token = tokio_util::sync::CancellationToken::new();
-
-            message_properties = message_properties
-                .set_request_id(tool_exchange_id.to_owned())
-                .set_cancellation_token(cancellation_token.clone());
-
-            // track the new exchange over here
-            self.track_exchange(&session_id, &tool_exchange_id, cancellation_token.clone())
-                .await;
-
-            let tool_use_output = session
-                // the clone here is pretty bad but its the easiest and the sanest
-                // way to keep things on the happy path
-                .clone()
-                .get_tool_to_use(
-                    tool_box.clone(),
-                    tool_exchange_id.to_owned(),
-                    exchange_id.to_owned(),
-                    tool_agent.clone(),
-                    message_properties.clone(),
-                )
-                .await;
-
-            println!("tool_use_output::{:?}", tool_use_output);
-
-            match tool_use_output {
-                Ok(AgentToolUseOutput::Success((tool_input_partial, new_session))) => {
-                    // update our session
-                    session = new_session;
-                    // store to disk
-                    let _ = self.save_to_storage(&session).await;
-                    let tool_type = tool_input_partial.to_tool_type();
-                    session = session
-                        .invoke_tool(
-                            tool_type.clone(),
-                            tool_input_partial,
-                            tool_box.clone(),
-                            root_directory.to_owned(),
-                            message_properties.clone(),
-                        )
-                        .await?;
 
                     let _ = self.save_to_storage(&session).await;
                     if matches!(tool_type, ToolType::AskFollowupQuestions)

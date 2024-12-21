@@ -1,0 +1,172 @@
+{
+    "model": "anthropic/claude-3.5-sonnet:beta",
+    "temperature": 0.2,
+    "messages": [
+        {
+            "role": "system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "You are an expert software engineer taked with helping the developer.\nYou know in detail everything about this repository and all the different code structures which are present in it source code for it.\n\n<uploaded_files>\n/Users/skcd/test_repo/sidecar\n</uploaded_files>\nI've uploaded a code repository in the directory /Users/skcd/test_repo/sidecar (not in /tmp/inputs).\n\nCan you help me implement the necessary changes to the repository so that the requirements specified by the user are met?\nI've also setup the developer environment in /Users/skcd/test_repo/sidecar.\n\nYour task is to make the minimal changes to files in the /Users/skcd/test_repo/sidecar directory to ensure the developer is satisfied.\n\nTool capabilities:\n- You have access to tools that let you execute CLI commands on the local checkout, list files, view source code definitions, regex search, read and write files. These tools help you effectively accomplish a wide range of tasks, such as writing code, making edits or improvements to existing files, understanding the current state of a project, and much more.\n- You can use search_files to perform regex searches across files in a specified directory, outputting context-rich results that include surrounding lines. This is particularly useful for understanding code patterns, finding specific implementations, or identifying areas that need refactoring.\n- When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the developer needs you may use it to find code patterns, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis.\n- Once a file has been created using `create` on `str_replace_editor` tool, you should not keep creating the same file again and again. Focus on editing the file after it has been created.\n- You can run long running terminal commands which can run in the background, we will present you with the updated logs. This can be useful if the user wants you to start a debug server in the terminal and then look at the logs or other long running processes.\n\n====\n\nSYSTEM INFORMATION\n\nOperating System: macos\nDefault Shell: /bin/zsh\nCurrent Working Directory: /Users/skcd/test_repo/sidecar\n\n====\n\nFOLLOW these steps to resolve the issue:\n1. As a first step, it might be a good idea to explore the repo to familiarize yourself with its structure.\n2. Once you have understood the repository structure being by making minimal edits to make sure that the user request is answered. The user request could also be about understanding the codebase in which case you don't need to make any edits.\n3. Once you have made the edits it is important that you look at the diagnostic messages which might be present so you can fix any errors or bugs which you have introduced.\n4. You also have access to the terminal, you should ALWAYS run commands from the /Users/skcd/test_repo/sidecar (any command run outside this directory will lead to errors)\n5. Once you have done everything to help the user out, use attempt_completion to summarise what you have done and end the task assigned to you by the user.\n\nYour thinking should be thorough and so it's fine if it's very long.",
+                    "cache_control": null
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "<editor_status>\n<open_files>\n/Users/skcd/test_repo/sidecar/sidecar/src/agentic/tool/terminal/mod.rs\ngit/scm0/input\n/Users/skcd/.vscode-oss-dev/User/modelSelection.json\n</open_files>\n<visible_files>\n\n</visible_files>\n</editor_status>\n<user_query>\ncan you make a bin file which shows how we can use the terminal command\n</user_query>",
+                    "cache_control": {
+                        "type": "ephemeral"
+                    }
+                }
+            ]
+        },
+        {
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I'll help you create a binary example that demonstrates how to use the terminal command functionality. First, let's explore the repository structure to understand where we should create this example.",
+                    "cache_control": null
+                }
+            ],
+            "tool_calls": [
+                {
+                    "id": "toolu_01MqxQeH64gCit9isikCAdT4",
+                    "type": "function",
+                    "function": {
+                        "name": "list_files",
+                        "arguments": "{\"directory_path\":\"/Users/skcd/test_repo/sidecar\",\"recursive\":false}"
+                    }
+                }
+            ]
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": "toolu_01MqxQeH64gCit9isikCAdT4",
+                    "content": "Content for directory /Users/skcd/test_repo/sidecar\n/Users/skcd/test_repo/sidecar/CODE_OF_CONDUCT.md\n/Users/skcd/test_repo/sidecar/Cargo.toml\n/Users/skcd/test_repo/sidecar/LICENSE.md\n/Users/skcd/test_repo/sidecar/llm_client\n/Users/skcd/test_repo/sidecar/package_windows_bin.sh\n/Users/skcd/test_repo/sidecar/dataset\n/Users/skcd/test_repo/sidecar/llm_prompts\n/Users/skcd/test_repo/sidecar/Cargo.lock\n/Users/skcd/test_repo/sidecar/vllm\n/Users/skcd/test_repo/sidecar/README.md\n/Users/skcd/test_repo/sidecar/update_version.sh\n/Users/skcd/test_repo/sidecar/.gitignore\n/Users/skcd/test_repo/sidecar/CONTRIBUTING.md\n/Users/skcd/test_repo/sidecar/sidecar\n/Users/skcd/test_repo/sidecar/HOW_TO_CONTRIBUTE.md\n/Users/skcd/test_repo/sidecar/huggingface\n/Users/skcd/test_repo/sidecar/rust-toolchain.toml\n/Users/skcd/test_repo/sidecar/package_windows_zip.sh\n/Users/skcd/test_repo/sidecar/logging\n/Users/skcd/test_repo/sidecar/SECURITY.md\n/Users/skcd/test_repo/sidecar/media"
+                }
+            ],
+            "tool_call_id": "toolu_01MqxQeH64gCit9isikCAdT4",
+            "name": "list_files"
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "description": "Request to list files and directories within the specified directory.\nIf recursive is true, it will list all files and directories recursively.\nIf recursive is false, it will only list the top-level contents.\nDo not use this tool to confirm the existence of files you may have created, as the user will let you know if the files were created successfully or not.",
+                "name": "list_files",
+                "parameters": {
+                    "properties": {
+                        "directory_path": {
+                            "description": "(required) The absolute path of the directory to list contents for.",
+                            "type": "string"
+                        },
+                        "recursive": {
+                            "description": "(required) Whether to list files recursively. Use true for recursive listing, false for top-level only.",
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "directory_path",
+                        "recursive"
+                    ],
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "description": "Request to perform a regex search across files in a specified directory, providing context-rich results.\nThis tool searches for patterns or specific content across multiple files, displaying each match with encapsulating context.",
+                "name": "search_files",
+                "parameters": {
+                    "properties": {
+                        "directory_path": {
+                            "description": "(required) The absolute path of the directory to search in. This directory will be recursively searched.",
+                            "type": "string"
+                        },
+                        "file_pattern": {
+                            "description": "(optional) Glob pattern to filter files (e.g., '*.ts' for TypeScript files). If not provided, it will search all files (*).",
+                            "type": "string"
+                        },
+                        "regex_pattern": {
+                            "description": "(required) The regular expression pattern to search for. Uses Rust regex syntax.",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "directory_path",
+                        "regex_pattern"
+                    ],
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "description": "Request to read the full contents of a file at the specified path.\nUse this when you need to examine the full content of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files.\nMay not be suitable for other types of binary files, as it returns the raw content as a string",
+                "name": "read_file",
+                "parameters": {
+                    "properties": {
+                        "fs_file_path": {
+                            "description": "(required) The relative path of the file to read.",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "fs_file_path"
+                    ],
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "description": "Use this when you have resolved the Github Issue and solved it completely or you have enough evidence to suggest that the Github Issue has been resolved after your changes.",
+                "name": "attempt_completion",
+                "parameters": {
+                    "properties": {
+                        "result": {
+                            "description": "(required) The result of the task. Formulate this result in a way that is final and does not require further input from the user. Don't end your result with questions or offers for further assistance.",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "result"
+                    ],
+                    "type": "object"
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "description": "Request to execute a CLI command on the system. Commands will be executed in the current working directory.",
+                "name": "execute_command",
+                "parameters": {
+                    "properties": {
+                        "command": {
+                            "description": "(required) The CLI command to execute. This should be valid for the current operating system. Ensure the command is properly formatted and does not contain any harmful instructions.",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "command"
+                    ],
+                    "type": "object"
+                }
+            }
+        }
+    ],
+    "stream": true
+}

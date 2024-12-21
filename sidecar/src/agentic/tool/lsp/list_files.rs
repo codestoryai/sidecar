@@ -192,6 +192,10 @@ impl ListFilesInput {
         &self.directory_path
     }
 
+    pub fn recursive(&self) -> bool {
+        self.recursive
+    }
+
     pub fn to_string(&self) -> String {
         format!(
             r#"<thinking>

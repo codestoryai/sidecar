@@ -4028,7 +4028,7 @@ dependencies = [
 
 [[package]]
 name = "sidecar"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "async-openai 0.14.3",

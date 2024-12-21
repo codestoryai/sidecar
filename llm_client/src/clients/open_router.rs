@@ -196,54 +196,54 @@ pub struct OpenRouterRequest {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct ToolFunction {
-    name: Option<String>,
-    arguments: Option<String>,
+pub struct ToolFunction {
+    pub(crate) name: Option<String>,
+    pub(crate) arguments: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct FunctionCall {
-    name: Option<String>,
-    arguments: Option<String>,
+pub struct FunctionCall {
+    pub(crate) name: Option<String>,
+    pub(crate) arguments: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct ToolCall {
-    index: i32,
-    id: Option<String>,
+pub struct ToolCall {
+    pub(crate) index: i32,
+    pub(crate) id: Option<String>,
 
     #[serde(rename = "type")]
-    call_type: Option<String>,
+    pub(crate) call_type: Option<String>,
 
     #[serde(rename = "function")]
-    function_details: Option<ToolFunction>,
+    pub(crate) function_details: Option<ToolFunction>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct OpenRouterResponseDelta {
+pub struct OpenRouterResponseDelta {
     #[serde(rename = "role")]
-    role: Option<String>,
+    pub(crate) role: Option<String>,
 
     #[serde(rename = "content")]
-    content: Option<String>,
+    pub(crate) content: Option<String>,
 
     #[serde(rename = "function_call")]
-    function_call: Option<FunctionCall>,
+    pub(crate) function_call: Option<FunctionCall>,
 
     #[serde(rename = "tool_calls")]
-    tool_calls: Option<Vec<ToolCall>>,
+    pub(crate) tool_calls: Option<Vec<ToolCall>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OpenRouterResponseChoice {
-    delta: OpenRouterResponseDelta,
-    finish_reason: Option<String>,
+    pub(crate) delta: OpenRouterResponseDelta,
+    pub(crate) finish_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct OpenRouterResponse {
-    model: Option<String>,
-    choices: Vec<OpenRouterResponseChoice>,
+pub struct OpenRouterResponse {
+    pub(crate) model: Option<String>,
+    pub(crate) choices: Vec<OpenRouterResponseChoice>,
 }
 
 impl OpenRouterRequest {
@@ -264,10 +264,12 @@ impl OpenRouterRequest {
                 .messages()
                 .into_iter()
                 .map(|message| {
-                    let mut role = message.role().to_string();
-                    if !message.tool_return_value().is_empty() {
-                        role = "tool".to_owned();
-                    }
+                    let role = message.role().to_string();
+                    println!("message::role::{role}");
+                    // if !message.tool_return_value().is_empty() {
+                    //     role = "tool".to_owned();
+                    // }
+                    println!("message::role::tool-return-role({role})");
 
                     // get the tool call id
                     let tool_call_id = message
@@ -300,8 +302,8 @@ impl OpenRouterRequest {
                             role,
                             content: {
                                 if tool_call_id.is_some() && tool_return_values.is_some() {
-                                    vec![OpenRouterRequestMessageType::tool_return(
-                                        tool_call_id.clone().expect("is_some to hold").to_owned(),
+                                    vec![OpenRouterRequestMessageType::text(
+                                        // tool_call_id.clone().expect("is_some to hold").to_owned(),
                                         tool_return_values.expect("is_some to hold").to_owned(),
                                     )]
                                 } else {
@@ -327,8 +329,6 @@ impl OpenRouterRequest {
                             },
                             tool_calls: {
                                 if message.role() == &LLMClientRole::Assistant {
-                                    vec![]
-                                } else {
                                     message
                                         .tool_use_value()
                                         .into_iter()
@@ -341,6 +341,8 @@ impl OpenRouterRequest {
                                             },
                                         })
                                         .collect()
+                                } else {
+                                    vec![]
                                 }
                             },
                             tool_call_id,
@@ -402,18 +404,17 @@ impl OpenRouterClient {
         let auth_key = self.generate_auth_key(api_key)?;
         let request = OpenRouterRequest::from_chat_request(request, model.to_owned());
         println!("tool_use_request::({:?})", &serde_json::to_string(&request));
-        let mut response_stream = dbg!(
-            self.client
-                .post(base_url)
-                .bearer_auth(auth_key)
-                .header("HTTP-Referer", "https://aide.dev/")
-                .header("X-Title", "aide")
-                .json(&request)
-                .send()
-                .await
-        )?
-        .bytes_stream()
-        .eventsource();
+        let mut response_stream = self
+            .client
+            .post(base_url)
+            .bearer_auth(auth_key)
+            .header("HTTP-Referer", "https://aide.dev/")
+            .header("X-Title", "aide")
+            .json(&request)
+            .send()
+            .await?
+            .bytes_stream()
+            .eventsource();
         let mut buffered_stream = "".to_owned();
         // controls which tool we will be using if any
         let mut tool_use_indication: Vec<(String, (String, String))> = vec![];

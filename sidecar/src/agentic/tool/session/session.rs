@@ -36,7 +36,12 @@ use crate::{
             },
             r#type::{Tool, ToolType},
             repo_map::generator::RepoMapGeneratorRequest,
-            session::tool_use_agent::{ToolUseAgentInputOnlyTools, ToolUseAgentOutputWithTools},
+            session::{
+                anthropic_computer_editor::AnthropicCodeEditorUse,
+                tool_use_agent::{
+                    ToolParameters, ToolUseAgentInputOnlyTools, ToolUseAgentOutputWithTools,
+                },
+            },
             terminal::terminal::TerminalInput,
             test_runner::runner::TestRunnerRequest,
         },
@@ -1101,11 +1106,12 @@ impl Session {
     pub async fn get_tool_to_use_json(
         mut self,
         tool_box: Arc<ToolBox>,
-        excahnge_id: String,
+        exchange_id: String,
         parent_exchange_id: String,
         tool_use_agent: ToolUseAgent,
         message_properties: SymbolEventMessageProperties,
     ) -> Result<AgentToolUseOutput, SymbolError> {
+        println!("session::get_tool_use_json");
         let mut convereted_messages = vec![];
         for previous_message in self.exchanges.iter() {
             convereted_messages.push(previous_message.to_conversation_message(true).await);
@@ -1120,6 +1126,7 @@ impl Session {
         let tool_agent_input = ToolUseAgentInputOnlyTools::new(
             convereted_messages,
             self.tools
+                .to_vec()
                 .into_iter()
                 .filter_map(|tool_type| tool_box.tools().get_tool_json(&tool_type))
                 .collect(),
@@ -1167,6 +1174,9 @@ impl Session {
                     "{}",
                     format!("inference::engine::retrying_tool_call::erroredbefore")
                 );
+                if matches!(tool_use_output, Err(SymbolError::CancelledResponseStream)) {
+                    return Ok(AgentToolUseOutput::Cancelled);
+                }
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 // just give it a plain retry and call it a day
                 tool_retry_index = tool_retry_index + 1;
@@ -1182,41 +1192,496 @@ impl Session {
         // TODO(skcd): Figure out how the data passing here will work
         match tool_use_output {
             Ok(tool_use_parameters) => match tool_use_parameters {
-                ToolUseAgentOutputWithTools::Success((tool_input_partial, _thinking)) => {
-                    if tool_input_partial.is_empty() {}
+                ToolUseAgentOutputWithTools::Success((tool_input_partial, thinking)) => {
+                    if tool_input_partial.is_empty() {
+                        Ok(AgentToolUseOutput::Failed(
+                            "failed to use any tool, I am going to retry".to_owned(),
+                        ))
+                    } else {
+                        let (tool_use_id, tool_input_partial) = tool_input_partial[0].clone();
+                        let _ = self
+                            .execute_tool_and_generate_observation(
+                                tool_input_partial.clone(),
+                                parent_exchange_id,
+                                tool_use_id,
+                                &exchange_id,
+                                thinking,
+                                tool_box,
+                                message_properties,
+                            )
+                            .await;
+                        Ok(AgentToolUseOutput::Success((tool_input_partial, self)))
+                    }
                 }
-                ToolUseAgentOutputWithTools::Failure(_thinking) => {}
+                ToolUseAgentOutputWithTools::Failure(thinking) => {
+                    // if we failed to get a tool show this as an exchange to the user
+                    match thinking {
+                        Some(thinking) => Ok(AgentToolUseOutput::Failed(thinking)),
+                        None => Ok(AgentToolUseOutput::Failed(
+                            "failed to generate a tool to use".to_owned(),
+                        )),
+                    }
+                }
             },
-            Err(e) => {}
+            Err(e) => {
+                // add an exchange here telling that we failed to generate the tool
+                // and show the thinking over here
+                Ok(AgentToolUseOutput::Failed(e.to_string()))
+            }
         }
-
-        todo!()
     }
 
     /// Executes the tool and generates the output over here to use from the tool
-    fn execute_tool_and_generate_observation(
-        &self,
+    /// we also add the observation to the exchanges so its taken care of
+    async fn execute_tool_and_generate_observation(
+        &mut self,
         tool_input_partial: ToolInputPartial,
+        parent_exchange_id: String,
+        tool_use_id: String,
+        exchange_id: &str,
         thinking: String,
         tool_box: Arc<ToolBox>,
         message_properties: SymbolEventMessageProperties,
-    ) -> Result<ToolExecutionOutput, SymbolError> {
-        let tool_execution_output = match tool_input_partial {
-            ToolInputPartial::AskFollowupQuestions(followup_question) => {}
-            ToolInputPartial::AttemptCompletion(attempt_completion) => {}
-            ToolInputPartial::CodeEditing(code_editing) => {}
-            ToolInputPartial::CodeEditorParameters(code_editor_parameters) => {}
-            ToolInputPartial::LSPDiagnostics(lsp_diagnostics) => {}
-            ToolInputPartial::ListFiles(list_files) => {}
-            ToolInputPartial::OpenFile(open_files) => {}
-            ToolInputPartial::RepoMapGeneration(repo_map_generation) => {}
-            ToolInputPartial::SearchFileContentWithRegex(search_with_regex) => {}
-            ToolInputPartial::TerminalCommand(terminal_command) => {}
+    ) -> Result<(), SymbolError> {
+        let ui_sender = message_properties.ui_sender();
+        let session_id = message_properties.root_request_id().to_owned();
+        let tool_type = tool_input_partial.to_tool_type();
+        // send thinking over
+        let _ = ui_sender.clone().send(UIEventWithID::tool_thinking(
+            session_id.to_owned(),
+            exchange_id.to_owned(),
+            thinking.to_owned(),
+        ));
+        match tool_input_partial.clone() {
+            ToolInputPartial::AskFollowupQuestions(followup_question) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "question".to_owned(),
+                        followup_question.question().to_owned(),
+                        followup_question.question().to_owned(),
+                    ),
+                ));
+
+                // now we want to execute the tool properly over here and store that we are going
+                // to be executing it
+                self.exchanges.push(Exchange::agent_tool_use(
+                    parent_exchange_id,
+                    exchange_id.to_owned(),
+                    tool_input_partial,
+                    tool_type,
+                    thinking,
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::AttemptCompletion(attempt_completion) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "result".to_owned(),
+                        attempt_completion.result().to_owned(),
+                        attempt_completion.result().to_owned(),
+                    ),
+                ));
+                if let Some(command) = attempt_completion.command() {
+                    let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                        session_id.to_owned(),
+                        exchange_id.to_owned(),
+                        ToolParameters::new(
+                            "command".to_owned(),
+                            command.to_owned(),
+                            command.to_owned(),
+                        ),
+                    ));
+                }
+
+                // now we can store the attempt completion over here as an exchange
+                self.exchanges.push(Exchange::agent_tool_use(
+                    parent_exchange_id,
+                    exchange_id.to_owned(),
+                    tool_input_partial,
+                    tool_type,
+                    thinking,
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::CodeEditing(_code_editing) => {
+                todo!("code_editing is not supported")
+            }
+            ToolInputPartial::CodeEditorParameters(code_editor_parameters) => {
+                let anthropic_computer_use =
+                    AnthropicCodeEditorUse::new(thinking.to_owned(), tool_box.clone());
+
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                // send the command over
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "command".to_owned(),
+                        code_editor_parameters.command.to_string(),
+                        code_editor_parameters.command.to_string(),
+                    ),
+                ));
+                // send the path which we are focussing on over here
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "fs_file_path".to_owned(),
+                        code_editor_parameters.path.to_owned(),
+                        code_editor_parameters.path.to_owned(),
+                    ),
+                ));
+
+                self.exchanges.push(Exchange::agent_tool_use(
+                    parent_exchange_id,
+                    exchange_id.to_owned(),
+                    tool_input_partial,
+                    tool_type.clone(),
+                    thinking,
+                    tool_use_id.to_owned(),
+                ));
+
+                let output = anthropic_computer_use
+                    .run_command(code_editor_parameters)
+                    .await;
+                // send the path which we will be using over here as well
+                // we might either get a correct output or a wrong output over here
+                let tool_use_output = match output {
+                    Ok(output) => output,
+                    Err(output) => output,
+                };
+
+                // save this as an exchange and send it over the wire as well
+                self.exchanges.push(Exchange::tool_output(
+                    exchange_id.to_owned(),
+                    tool_type,
+                    tool_use_output,
+                    UserContext::default(),
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::LSPDiagnostics(_lsp_diagnostics) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+
+                self.exchanges.push(Exchange::agent_tool_use(
+                    parent_exchange_id,
+                    exchange_id.to_owned(),
+                    tool_input_partial,
+                    tool_type.clone(),
+                    thinking,
+                    tool_use_id.to_owned(),
+                ));
+
+                // Grab the LSP diagnostics over here so we can show that to the LLM
+                let workspace_diagnostics = tool_box
+                    .grab_workspace_diagnostics(message_properties.clone())
+                    .await?;
+
+                let diagnostics_grouped_by_file: DiagnosticMap = workspace_diagnostics
+                    .0
+                    .into_iter()
+                    .fold(HashMap::new(), |mut acc, error| {
+                        acc.entry(error.fs_file_path().to_owned())
+                            .or_insert_with(Vec::new)
+                            .push(error);
+                        acc
+                    });
+
+                let formatted_diagnostics =
+                    PlanService::format_diagnostics(&diagnostics_grouped_by_file);
+
+                // add this again as an exchange as the output for the tool use
+                self.exchanges.push(Exchange::tool_output(
+                    exchange_id.to_owned(),
+                    tool_type,
+                    formatted_diagnostics,
+                    UserContext::default(),
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::ListFiles(list_files) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                let directory_path = list_files.directory_path();
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "directory_path".to_owned(),
+                        directory_path.to_owned(),
+                        directory_path.to_owned(),
+                    ),
+                ));
+                let recrusive = list_files.recursive();
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "recursive".to_owned(),
+                        recrusive.to_string(),
+                        recrusive.to_string(),
+                    ),
+                ));
+                self.exchanges.push(Exchange::agent_tool_use(
+                    parent_exchange_id,
+                    exchange_id.to_owned(),
+                    tool_input_partial,
+                    tool_type.clone(),
+                    thinking,
+                    tool_use_id.to_owned(),
+                ));
+
+                // list the files here using the tool-box
+                let input = ToolInput::ListFiles(list_files.clone());
+                let response = tool_box
+                    .tools()
+                    .invoke(input)
+                    .await
+                    .map_err(|e| SymbolError::ToolError(e))?;
+                let list_files_output = response
+                    .get_list_files_directory()
+                    .ok_or(SymbolError::WrongToolOutput)?;
+                let response = list_files_output
+                    .files()
+                    .into_iter()
+                    .map(|file_path| file_path.to_string_lossy().to_string())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                let message = format!(
+                    r#"Content for directory {directory_path}
+{response}"#
+                );
+
+                self.exchanges.push(Exchange::tool_output(
+                    exchange_id.to_owned(),
+                    tool_type,
+                    message,
+                    UserContext::default(),
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::OpenFile(open_files) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "fs_file_path".to_owned(),
+                        open_files.fs_file_path().to_owned(),
+                        open_files.fs_file_path().to_owned(),
+                    ),
+                ));
+                let request = OpenFileRequest::new(
+                    open_files.fs_file_path().to_owned(),
+                    message_properties.editor_url(),
+                );
+                let input = ToolInput::OpenFile(request);
+                let response = tool_box
+                    .tools()
+                    .invoke(input)
+                    .await
+                    .map_err(|e| SymbolError::ToolError(e))?
+                    .get_file_open_response()
+                    .ok_or(SymbolError::WrongToolOutput)?
+                    .to_string();
+
+                let message = format!(
+                    r#"Here's the full content of the file:
+{}"#,
+                    response.to_string()
+                );
+
+                self.exchanges.push(Exchange::tool_output(
+                    exchange_id.to_owned(),
+                    tool_type,
+                    message,
+                    UserContext::default(),
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::RepoMapGeneration(repo_map_generation) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "directory_path".to_owned(),
+                        repo_map_generation.directory_path().to_owned(),
+                        repo_map_generation.directory_path().to_owned(),
+                    ),
+                ));
+
+                let directory_path = repo_map_generation.directory_path().to_owned();
+                let request = ToolInput::RepoMapGeneration(RepoMapGeneratorRequest::new(
+                    repo_map_generation.directory_path().to_owned(),
+                    3000,
+                ));
+                let tool_output = tool_box
+                    .tools()
+                    .invoke(request)
+                    .await
+                    .map_err(|e| SymbolError::ToolError(e))?
+                    .repo_map_generator_response()
+                    .ok_or(SymbolError::WrongToolOutput)?;
+                let repo_map_str = tool_output.repo_map().to_owned();
+                let message = format!(
+                    r#"Here's the outline of classes and functions present in the directory {directory_path}
+{repo_map_str}"#
+                );
+                self.exchanges.push(Exchange::tool_output(
+                    exchange_id.to_owned(),
+                    tool_type,
+                    message,
+                    UserContext::default(),
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::SearchFileContentWithRegex(search_with_regex) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "directory_path".to_owned(),
+                        search_with_regex.directory_path().to_owned(),
+                        search_with_regex.directory_path().to_owned(),
+                    ),
+                ));
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "regex_pattern".to_owned(),
+                        search_with_regex.regex_pattern().to_owned(),
+                        search_with_regex.regex_pattern().to_owned(),
+                    ),
+                ));
+                if let Some(file_pattern) = search_with_regex.file_pattern() {
+                    let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                        session_id.to_owned(),
+                        exchange_id.to_owned(),
+                        ToolParameters::new(
+                            "file_pattern".to_owned(),
+                            file_pattern.to_owned(),
+                            file_pattern.to_owned(),
+                        ),
+                    ));
+                }
+
+                let request = SearchFileContentInput::new(
+                    search_with_regex.directory_path().to_owned(),
+                    search_with_regex.regex_pattern().to_owned(),
+                    search_with_regex.file_pattern().map(|s| s.to_owned()),
+                    message_properties.editor_url(),
+                );
+                let input = ToolInput::SearchFileContentWithRegex(request);
+                let response = tool_box
+                    .tools()
+                    .invoke(input)
+                    .await
+                    .map_err(|e| SymbolError::ToolError(e))?
+                    .get_search_file_content_with_regex()
+                    .ok_or(SymbolError::WrongToolOutput)?;
+                let response = response.response();
+                let message = format!(
+                    r#"Here's the result of running the search query
+{}"#,
+                    response
+                );
+                self.exchanges.push(Exchange::tool_output(
+                    exchange_id.to_owned(),
+                    tool_type,
+                    message,
+                    UserContext::default(),
+                    tool_use_id,
+                ));
+            }
+            ToolInputPartial::TerminalCommand(terminal_command) => {
+                let _ = ui_sender.send(UIEventWithID::tool_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    tool_type.clone(),
+                ));
+                let _ = ui_sender.send(UIEventWithID::tool_parameter_found(
+                    session_id.to_owned(),
+                    exchange_id.to_owned(),
+                    ToolParameters::new(
+                        "command".to_owned(),
+                        terminal_command.command().to_owned(),
+                        terminal_command.command().to_owned(),
+                    ),
+                ));
+
+                let command = terminal_command.command().to_owned();
+                let request =
+                    TerminalInput::new(command.to_owned(), message_properties.editor_url());
+                let input = ToolInput::TerminalCommand(request);
+                let tool_output = tool_box
+                    .tools()
+                    .invoke(input)
+                    .await
+                    .map_err(|e| SymbolError::ToolError(e))?
+                    .terminal_command()
+                    .ok_or(SymbolError::WrongToolOutput)?;
+                let output = tool_output.output().to_owned();
+                let message = format!(
+                    r#"Here's the output from running the terminal command
+Command: {}
+Terminal output: {}"#,
+                    command, output
+                );
+
+                self.exchanges.push(Exchange::tool_output(
+                    exchange_id.to_owned(),
+                    tool_type,
+                    message,
+                    UserContext::default(),
+                    tool_use_id,
+                ));
+            }
             ToolInputPartial::TestRunner(_) => {
                 todo!("test runner command is not supported")
             }
         };
-        todo!("figure out how to implement each of these")
+        Ok(())
     }
 
     pub async fn get_tool_to_use(

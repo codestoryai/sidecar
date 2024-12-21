@@ -1,12 +1,18 @@
+use std::collections::HashMap;
+
 use async_openai::types::CreateChatCompletionStreamResponse;
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::provider::{CodeStoryLLMTypes, LLMProvider, LLMProviderAPIKeys};
+use crate::{
+    clients::open_router::OpenRouterResponse,
+    provider::{CodeStoryLLMTypes, LLMProvider, LLMProviderAPIKeys},
+};
 
 use super::{
+    open_router::OpenRouterRequest,
     togetherai::TogetherAIClient,
     types::{
         LLMClient, LLMClientCompletionRequest, LLMClientCompletionResponse,
@@ -212,6 +218,10 @@ impl CodeStoryClient {
         }
     }
 
+    pub fn model_endpoint_tool_use(&self, _model: &LLMType) -> Result<String, LLMClientError> {
+        Ok(format!("{}/claude-api-tool-use", self.api_base))
+    }
+
     pub fn model_endpoint(&self, model: &LLMType) -> Result<String, LLMClientError> {
         match model {
             LLMType::GPT3_5_16k => Ok(self.gpt3_endpoint(&self.api_base)),
@@ -249,6 +259,109 @@ impl CodeStoryClient {
             LLMProviderAPIKeys::CodeStory(api_key) => Ok(api_key.access_token),
             _ => Err(LLMClientError::WrongAPIKeyType),
         }
+    }
+
+    pub async fn stream_completion_with_tool(
+        &self,
+        api_key: LLMProviderAPIKeys,
+        request: LLMClientCompletionRequest,
+        _metadata: HashMap<String, String>,
+        sender: UnboundedSender<LLMClientCompletionResponse>,
+    ) -> Result<(String, Vec<(String, (String, String))>), LLMClientError> {
+        let model = self.model_name(request.model())?;
+        let endpoint = self.model_endpoint_tool_use(request.model())?;
+        println!("endpoint::{}", &endpoint);
+
+        // get access token from api_key
+        let access_token = self.access_token(api_key)?;
+
+        let request = OpenRouterRequest::from_chat_request(request, model.to_owned());
+        let mut response_stream = self
+            .client
+            .post(endpoint)
+            .header("X-Accel-Buffering", "no")
+            .header("Authorization", format!("Bearer {}", access_token))
+            .json(&request)
+            .send()
+            .await?
+            .bytes_stream()
+            .eventsource();
+        let mut buffered_stream = "".to_owned();
+        // controls which tool we will be using if any
+        let mut tool_use_indication: Vec<(String, (String, String))> = vec![];
+
+        // handle all the tool parameters that are coming
+        // we will use a global tracker over here
+        // format to support: https://gist.github.com/theskcd/4d5b0f1a859be812bffbb0548e733233
+        let mut curernt_tool_use: Option<String> = None;
+        let current_tool_use_ref = &mut curernt_tool_use;
+        let mut current_tool_use_id: Option<String> = None;
+        let current_tool_use_id_ref = &mut current_tool_use_id;
+        let mut running_tool_input = "".to_owned();
+        let running_tool_input_ref = &mut running_tool_input;
+
+        while let Some(event) = response_stream.next().await {
+            match event {
+                Ok(event) => {
+                    if &event.data == "[DONE]" {
+                        continue;
+                    }
+                    println!("stream_completion_with_tool:({:?})", &event.data);
+                    let value = serde_json::from_str::<OpenRouterResponse>(&event.data)?;
+                    let first_choice = &value.choices[0];
+                    if let Some(content) = first_choice.delta.content.as_ref() {
+                        buffered_stream = buffered_stream + &content;
+                        sender.send(LLMClientCompletionResponse::new(
+                            buffered_stream.to_owned(),
+                            Some(content.to_owned()),
+                            model.to_owned(),
+                        ))?;
+                    }
+
+                    if let Some(finish_reason) = first_choice.finish_reason.as_ref() {
+                        if finish_reason == "tool_calls" {
+                            if let (Some(current_tool_use), Some(current_tool_use_id)) = (
+                                current_tool_use_ref.clone(),
+                                current_tool_use_id_ref.clone(),
+                            ) {
+                                tool_use_indication.push((
+                                    current_tool_use.to_owned(),
+                                    (
+                                        current_tool_use_id.to_owned(),
+                                        running_tool_input_ref.to_owned(),
+                                    ),
+                                ));
+                            }
+                            // now empty the tool use tracked
+                            *current_tool_use_ref = None;
+                            *running_tool_input_ref = "".to_owned();
+                            *current_tool_use_id_ref = None;
+                        }
+                    }
+                    if let Some(tool_calls) = first_choice.delta.tool_calls.as_ref() {
+                        tool_calls.into_iter().for_each(|tool_call| {
+                            let _tool_call_index = tool_call.index;
+                            if let Some(function_details) = tool_call.function_details.as_ref() {
+                                if let Some(tool_id) = tool_call.id.clone() {
+                                    *current_tool_use_id_ref = Some(tool_id.to_owned());
+                                }
+                                if let Some(name) = function_details.name.clone() {
+                                    *current_tool_use_ref = Some(name.to_owned());
+                                }
+                                if let Some(arguments) = function_details.arguments.clone() {
+                                    *running_tool_input_ref =
+                                        running_tool_input_ref.to_owned() + &arguments;
+                                }
+                            }
+                        })
+                    }
+                }
+                Err(e) => {
+                    dbg!(e);
+                }
+            }
+        }
+        Ok((buffered_stream, tool_use_indication))
     }
 }
 

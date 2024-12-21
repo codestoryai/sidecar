@@ -28,6 +28,14 @@ impl AttemptCompletionClientRequest {
         Self { result, command }
     }
 
+    pub fn result(&self) -> &str {
+        &self.result
+    }
+
+    pub fn command(&self) -> Option<String> {
+        self.command.clone()
+    }
+
     pub fn to_string(&self) -> String {
         format!(
             r#"<thinking>
