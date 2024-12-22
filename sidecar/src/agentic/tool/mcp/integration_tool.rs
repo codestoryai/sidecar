@@ -44,8 +44,15 @@ pub enum MCPIntegrationToolResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub enum MCPIntegrationToolAction {
+    List,
+    Call,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct MCPIntegrationToolQuery {
-    pub action: String,
+    pub action: MCPIntegrationToolAction,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -130,9 +137,9 @@ impl MCPIntegrationToolBroker {
         &self,
         query: MCPIntegrationToolQuery,
     ) -> Result<MCPIntegrationToolResponse, ToolError> {
-        match query.action.as_str() {
-            "list" => self.list_all_tools().await,
-            "call" => {
+        match query.action {
+            MCPIntegrationToolAction::List => self.list_all_tools().await,
+            MCPIntegrationToolAction::Call => {
                 let server_name = query.server_name.as_ref().ok_or_else(|| {
                     ToolError::InvalidInput("Missing 'server_name' for call action".to_string())
                 })?;
@@ -142,7 +149,6 @@ impl MCPIntegrationToolBroker {
                 self.call_tool(server_name, tool_name, query.arguments.clone())
                     .await
             }
-            _ => Err(ToolError::InvalidInput("Unknown action".to_string())),
         }
     }
 }

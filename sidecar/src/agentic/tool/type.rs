@@ -149,7 +149,7 @@ pub enum ToolType {
     FeedbackGeneration,
     // Code editor tool (this is special for anthropic)
     CodeEditorTool,
-    MCPIntegrationTool
+    MCPIntegrationTool,
 }
 
 impl std::fmt::Display for ToolType {
@@ -250,7 +250,10 @@ impl std::fmt::Display for ToolType {
             ToolType::RewardGeneration => write!(f, "reward_generation"),
             ToolType::FeedbackGeneration => write!(f, "feedback_generation"),
             ToolType::CodeEditorTool => write!(f, "str_replace_editor"),
-            ToolType::MCPIntegrationTool => write!(f, "mcp_integration"),
+            ToolType::MCPIntegrationTool => write!(
+                f,
+                "Gives access to a multiple tools, which you can list via list_tools and invoke "
+            ),
         }
     }
 }
@@ -329,4 +332,3 @@ pub trait Tool {
     /// Gets the reward scaling after the tool has been used
     fn get_reward_scale(&self, trajectory_length: usize) -> Vec<ToolRewardScale>;
 }
-
