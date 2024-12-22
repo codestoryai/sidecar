@@ -1663,6 +1663,9 @@ impl SearchTree {
                                 EditorCommand::View => {
                                     "str_replace_editor::view".purple().to_string()
                                 }
+                                EditorCommand::ComputerUse => {
+                                    "str_replace_editor::computer_use".green().to_string()
+                                }
                             }
                         }
                         ToolInputPartial::CodeEditing(_) => {
