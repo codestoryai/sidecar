@@ -27,6 +27,7 @@ use super::{
         reranking_symbols_for_editing_context::ReRankingSnippetsForCodeEditingContext,
         scratch_pad::ScratchPadAgentBroker, should_edit::ShouldEditCodeSymbol,
     },
+    anthropic_computer::AnthropicComputerTool,
     editor::apply::EditorApply,
     errors::ToolError,
     feedback::feedback::FeedbackClientGenerator,
@@ -478,6 +479,12 @@ impl ToolBroker {
         tools.insert(
             ToolType::FeedbackGeneration,
             Box::new(FeedbackClientGenerator::new(llm_client)),
+        );
+        tools.insert(
+            ToolType::AnthropicComputer,
+            Box::new(AnthropicComputerTool::new(
+                "http://localhost:3000".to_string(),
+            )),
         );
         // we also want to add the re-ranking tool here, so we invoke it freely
         Self { tools }

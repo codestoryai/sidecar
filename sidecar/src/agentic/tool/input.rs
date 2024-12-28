@@ -299,6 +299,8 @@ pub enum ToolInput {
     RewardGeneration(RewardGenerationRequest),
     // Feedback generation
     FeedbackGeneration(FeedbackGenerationRequest),
+    // Anthropic computer use
+    AnthropicComputer(serde_json::Value),
 }
 
 impl ToolInput {
@@ -387,6 +389,7 @@ impl ToolInput {
             ToolInput::RunTests(_) => ToolType::TestRunner,
             ToolInput::RewardGeneration(_) => ToolType::RewardGeneration,
             ToolInput::FeedbackGeneration(_) => ToolType::FeedbackGeneration,
+            ToolInput::AnthropicComputer(_) => ToolType::AnthropicComputer,
         }
     }
 
