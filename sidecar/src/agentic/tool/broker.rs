@@ -1,7 +1,11 @@
+use anyhow::Context;
 use async_trait::async_trait;
-use std::{collections::HashMap, sync::Arc};
-
 use llm_client::broker::LLMBroker;
+use mcp_client_rs::client::Client;
+use mcp_client_rs::client::ClientBuilder;
+use serde::Deserialize;
+use std::{collections::HashMap, sync::Arc};
+use tokio::fs;
 
 use crate::{
     agentic::symbol::identifier::LLMProperties, chunking::languages::TSLanguageParsing,
@@ -479,8 +483,25 @@ impl ToolBroker {
             ToolType::FeedbackGeneration,
             Box::new(FeedbackClientGenerator::new(llm_client)),
         );
-        // we also want to add the re-ranking tool here, so we invoke it freely
+
         Self { tools }
+    }
+
+    /// Initialize MCP support for the ToolBroker.
+    /// This is optional and can be called after creation if MCP support is needed.
+    pub async fn with_mcp(mut self) -> anyhow::Result<Self> {
+        let clients = setup_mcp_clients().await?;
+        if !clients.is_empty() {
+            self.tools.insert(
+                ToolType::MCPIntegrationTool,
+                Box::new(
+                    crate::agentic::tool::mcp::integration_tool::MCPIntegrationToolBroker::new(
+                        clients,
+                    ),
+                ),
+            );
+        }
+        Ok(self)
     }
 
     pub fn get_tool_description(&self, tool_type: &ToolType) -> Option<String> {
@@ -567,4 +588,64 @@ impl ToolBroker {
             }
         }
     }
+}
+
+// unsure if this is the best place to put these
+#[derive(Deserialize)]
+struct ServerConfig {
+    command: String,
+    #[serde(default)]
+    args: Vec<String>,
+    #[serde(default)]
+    env: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+pub struct RootConfig {
+    #[serde(rename = "mcpServers")]
+    mcp_servers: HashMap<String, ServerConfig>,
+}
+
+async fn setup_mcp_clients() -> anyhow::Result<HashMap<String, Client>> {
+    let config_path = dirs::home_dir()
+        .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?
+        .join(".aide/config.json");
+
+    if !config_path.exists() {
+        return Ok(HashMap::new());
+    }
+
+    let config_str = fs::read_to_string(&config_path)
+        .await
+        .context("Failed to read ~/.aide/config.json")?;
+    let root_config: RootConfig =
+        serde_json::from_str(&config_str).context("Failed to parse ~/.aide/config.json")?;
+
+    let mut mcp_clients_map = HashMap::new();
+
+    for (server_name, server_conf) in root_config.mcp_servers.iter() {
+        let mut builder = ClientBuilder::new(&server_conf.command);
+        for arg in &server_conf.args {
+            builder = builder.arg(arg);
+        }
+        for (k, v) in &server_conf.env {
+            builder = builder.env(k, v);
+        }
+
+        match builder.spawn_and_initialize().await {
+            Ok(client) => {
+                mcp_clients_map.insert(server_name.clone(), client);
+                eprintln!("Initialized MCP client for '{}'", server_name);
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to initialize MCP client for '{}': {}",
+                    server_name, e
+                );
+                // continue trying other clients
+            }
+        }
+    }
+
+    Ok(mcp_clients_map)
 }

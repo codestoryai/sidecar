@@ -77,6 +77,7 @@ use super::{
     swe_bench::test_tool::SWEBenchTestRequest,
     terminal::terminal::{TerminalInput, TerminalInputPartial},
     test_runner::runner::{TestRunnerRequest, TestRunnerRequestPartial},
+    mcp::integration_tool::MCPIntegrationToolQuery,
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -172,6 +173,7 @@ impl ToolInputPartial {
             ToolType::RepoMapGeneration => None,
             ToolType::TestRunner => Some(TestRunnerRequestPartial::to_json()),
             ToolType::CodeEditorTool => Some(CodeEditorParameters::to_json()),
+            ToolType::MCPIntegrationTool => Some(MCPIntegrationToolQuery::to_json()),
             _ => None,
         }
     }
@@ -299,6 +301,8 @@ pub enum ToolInput {
     RewardGeneration(RewardGenerationRequest),
     // Feedback generation
     FeedbackGeneration(FeedbackGenerationRequest),
+    // MCP Integration tool
+    MCPIntegrationTool(MCPIntegrationToolQuery),
 }
 
 impl ToolInput {
@@ -387,6 +391,7 @@ impl ToolInput {
             ToolInput::RunTests(_) => ToolType::TestRunner,
             ToolInput::RewardGeneration(_) => ToolType::RewardGeneration,
             ToolInput::FeedbackGeneration(_) => ToolType::FeedbackGeneration,
+            ToolInput::MCPIntegrationTool(_) => ToolType::MCPIntegrationTool,
         }
     }
 

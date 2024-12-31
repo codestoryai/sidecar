@@ -90,19 +90,23 @@ impl Application {
         let fill_in_middle_state = Arc::new(FillInMiddleState::new());
         let symbol_tracker = Arc::new(SymbolTrackerInline::new(editor_parsing.clone()));
 
-        let tool_broker = Arc::new(ToolBroker::new(
-            llm_broker.clone(),
-            Arc::new(CodeEditBroker::new()),
-            symbol_tracker.clone(),
-            language_parsing.clone(),
-            // do not apply the edits directly
-            ToolBrokerConfiguration::new(None, false),
-            LLMProperties::new(
-                LLMType::Gpt4O,
-                LLMProvider::OpenAI,
-                LLMProviderAPIKeys::OpenAI(OpenAIProvider::new("".to_owned())),
-            ),
-        ));
+        let tool_broker = Arc::new(
+            ToolBroker::new(
+                llm_broker.clone(),
+                Arc::new(CodeEditBroker::new()),
+                symbol_tracker.clone(),
+                language_parsing.clone(),
+                // do not apply the edits directly
+                ToolBrokerConfiguration::new(None, false),
+                LLMProperties::new(
+                    LLMType::Gpt4O,
+                    LLMProvider::OpenAI,
+                    LLMProviderAPIKeys::OpenAI(OpenAIProvider::new("".to_owned())),
+                ),
+            )
+            .with_mcp()
+            .await?,
+        );
         let tool_box = Arc::new(ToolBox::new(
             tool_broker.clone(),
             symbol_tracker.clone(),

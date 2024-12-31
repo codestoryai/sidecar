@@ -556,6 +556,7 @@ impl SessionService {
                     ToolType::AttemptCompletion,
                     ToolType::RepoMapGeneration,
                     ToolType::TerminalCommand,
+                    ToolType::MCPIntegrationTool, // why not showing up??
                 ],
                 UserContext::default(),
             )
