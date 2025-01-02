@@ -218,8 +218,13 @@ impl CodeStoryClient {
         }
     }
 
-    pub fn model_endpoint_tool_use(&self, _model: &LLMType) -> Result<String, LLMClientError> {
-        Ok(format!("{}/claude-api-tool-use", self.api_base))
+    pub fn model_endpoint_tool_use(&self, model: &LLMType) -> Result<String, LLMClientError> {
+        match model {
+            LLMType::ClaudeSonnet | LLMType::ClaudeHaiku => {
+                Ok(format!("{}/claude-api-tool-use", self.api_base))
+            }
+            _ => Err(LLMClientError::UnSupportedModel),
+        }
     }
 
     pub fn model_endpoint(&self, model: &LLMType) -> Result<String, LLMClientError> {
@@ -358,6 +363,7 @@ impl CodeStoryClient {
                 }
                 Err(e) => {
                     dbg!(e);
+                    return Err(LLMClientError::FailedToGetResponse);
                 }
             }
         }
