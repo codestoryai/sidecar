@@ -487,6 +487,20 @@ impl ToolBroker {
         Self { tools }
     }
 
+    /// Sets a reminder for the tool, including the name and the format of it
+    pub fn get_tool_reminder(&self, tool_type: &ToolType) -> Option<String> {
+        if let Some(tool) = self.tools.get(tool_type) {
+            let tool_format = tool.tool_input_format();
+            let tool_name = tool_type.to_string();
+            Some(format!(
+                r#"### {tool_name}
+{tool_format}"#
+            ))
+        } else {
+            None
+        }
+    }
+
     /// discover each MCP server in ~/.aide/config.json
     /// create dynamic tools from each server
     /// used to augument broker initialization w/MCP tools

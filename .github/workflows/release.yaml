@@ -144,6 +144,7 @@ jobs:
         ARCH: ${{ env.ARCH }}
         GITHUB_TOKEN: ${{ secrets.BINARIES_RELEASE_PAT }}
         GITHUB_USERNAME: ${{ github.repository_owner }}
+      shell: bash
       run: |
         ./update_version.sh
 
@@ -157,10 +158,21 @@ jobs:
         GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
       shell: bash
       run: |
+        echo "Debug info:"
+        echo "OS_NAME: ${OS_NAME}"
+        echo "ARCH: ${ARCH}"
+        echo "CARGO_PKG_VERSION: ${CARGO_PKG_VERSION}"
+
         SPECIFIC_VERSION_PATH="${CARGO_PKG_VERSION}/${OS_NAME}/${ARCH}/sidecar.zip"
         LATEST_VERSION_PATH="latest/${OS_NAME}/${ARCH}/sidecar.zip"
 
-        # Copy the built binary to version-specific folder in GCP bucket
+        echo "Paths:"
+        echo "SPECIFIC_VERSION_PATH: ${SPECIFIC_VERSION_PATH}"
+        echo "LATEST_VERSION_PATH: ${LATEST_VERSION_PATH}"
+
+        # Verify file exists
+        ls -l "./sidecar.zip"
+
+        # Copy with verbose flag
         gsutil cp "./sidecar.zip" "gs://sidecar-bin/${SPECIFIC_VERSION_PATH}"
-        # Also update the latest version
         gsutil cp "./sidecar.zip" "gs://sidecar-bin/${LATEST_VERSION_PATH}"

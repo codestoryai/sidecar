@@ -61,7 +61,7 @@ impl OpenRouterRequestMessageType {
         }
     }
 
-    pub fn tool_return(tool_use_id: String, content: String) -> Self {
+    pub fn _tool_return(tool_use_id: String, content: String) -> Self {
         Self::ToolReturn {
             tool_use_id,
             content,

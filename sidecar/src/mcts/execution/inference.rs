@@ -460,6 +460,7 @@ Always include the <thinking></thinking> section before using the tool."#
                 .into_iter()
                 .filter_map(|tool_type| tool_box.tools().get_tool_description(&tool_type))
                 .collect(),
+            vec![],
             None,
             message_properties.clone(),
         );

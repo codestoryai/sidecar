@@ -235,6 +235,7 @@ impl Tool for LSPOpenFile {
             r#"### read_file
 Request to read the contents of a file at the specified path.
 Use this when you need to examine the contents of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files.
+This always takes ABSOLUTE paths as input.
 May not be suitable for other types of binary files, as it returns the raw content as a string."#
         )
     }
@@ -242,15 +243,14 @@ May not be suitable for other types of binary files, as it returns the raw conte
     fn tool_input_format(&self) -> String {
         format!(
             r#"Parameters:
-- fs_file_path: (required) The absolute path of the file to read.
+- fs_file_path: (required) The ABSOLUTE path of the file to read.
 
 Usage:
 <read_file>
 <fs_file_path>
 File path here
 </fs_file_path>
-</read_file>
-"#
+</read_file>"#
         )
     }
 

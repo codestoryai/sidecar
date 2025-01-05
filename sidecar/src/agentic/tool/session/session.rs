@@ -1,7 +1,11 @@
 //! We can create a new session over here and its composed of exchanges
 //! The exchanges can be made by the human or the agent
 
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Duration,
+};
 
 use futures::StreamExt;
 use tokio::io::AsyncWriteExt;
@@ -59,14 +63,6 @@ use super::{
     hot_streak::SessionHotStreakRequest,
     tool_use_agent::{ToolUseAgent, ToolUseAgentInput, ToolUseAgentOutput},
 };
-
-#[derive(Debug)]
-struct ToolExecutionOutput {
-    message: String,
-    thinking: Option<String>,
-    expect_correction: bool,
-    summary: Option<String>,
-}
 
 #[derive(Debug)]
 pub enum AgentToolUseOutput {
@@ -748,6 +744,12 @@ impl Session {
         }
     }
 
+    /// Updates the tools which are present in the session
+    pub fn set_tools(mut self, tools: Vec<ToolType>) -> Self {
+        self.tools = tools;
+        self
+    }
+
     pub fn session_id(&self) -> &str {
         &self.session_id
     }
@@ -899,7 +901,7 @@ impl Session {
         self
     }
 
-    pub fn human_message_tool_use(
+    pub async fn human_message_tool_use(
         mut self,
         exchange_id: String,
         human_message: String,
@@ -917,11 +919,19 @@ impl Session {
 {}
 </visible_files>
 </editor_status>
+<user_provided_context>
+{}
+</user_provided_context>
 <user_query>
 {}
 </user_query>"#,
             all_files.join("\n"),
             open_files.join("\n"),
+            user_context
+                .clone()
+                .to_xml(HashSet::default())
+                .await
+                .unwrap_or_default(),
             human_message
         );
         let exchange = Exchange::human_chat(
@@ -1720,6 +1730,11 @@ Terminal output: {}"#,
                 .into_iter()
                 .filter_map(|tool_type| tool_box.tools().get_tool_description(&tool_type))
                 .collect(),
+            self.tools
+                .to_vec()
+                .into_iter()
+                .filter_map(|tool_type| tool_box.tools().get_tool_reminder(&tool_type))
+                .collect(),
             pending_spawned_process_output,
             message_properties.clone(),
         );
@@ -2363,7 +2378,7 @@ Terminal output: {}"#,
         mut self,
         parent_exchange_id: String,
         scratch_pad_agent: ScratchPadAgent,
-        tool_box: Arc<ToolBox>,
+        _tool_box: Arc<ToolBox>,
         message_properties: SymbolEventMessageProperties,
     ) -> Result<Self, SymbolError> {
         let last_exchange = self.last_exchange().cloned();
@@ -2646,10 +2661,6 @@ Terminal output: {}"#,
 
     pub fn has_running_code_edits(&self, exchange_id: &str) -> bool {
         let found_exchange = self.find_exchange_by_id(exchange_id);
-        println!(
-            "session::has_running_code_edits::exchange_id({})::found_exchange::({:?})",
-            exchange_id, found_exchange
-        );
         match found_exchange {
             Some(exchange) => {
                 exchange.is_agent_work() && exchange.is_still_running() && exchange.has_code_edits()
@@ -2983,6 +2994,12 @@ Terminal output: {}"#,
                     .map_err(|e| SymbolError::ToolError(e))?
                     .get_search_file_content_with_regex()
                     .ok_or(SymbolError::WrongToolOutput)?;
+
+                // if the cancellation token is set, then we should not update
+                // our state over here with the broken terminal output
+                if message_properties.cancellation_token().is_cancelled() {
+                    return Ok(self);
+                }
                 let response = response.response();
                 let _ =
                     message_properties
@@ -3013,6 +3030,11 @@ Terminal output: {}"#,
                     .map_err(|e| SymbolError::ToolError(e))?
                     .terminal_command()
                     .ok_or(SymbolError::WrongToolOutput)?;
+                // if the cancellation token is set, then we should not update
+                // our state over here with the broken terminal output
+                if message_properties.cancellation_token().is_cancelled() {
+                    return Ok(self);
+                }
                 let output = tool_output.output().to_owned();
                 let _ =
                     message_properties

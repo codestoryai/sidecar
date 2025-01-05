@@ -405,14 +405,16 @@ impl SessionService {
             Some(repo_name),
         );
 
-        session = session.human_message_tool_use(
-            exchange_id.to_owned(),
-            user_message.to_owned(),
-            all_files,
-            open_files,
-            shell,
-            UserContext::default(),
-        );
+        session = session
+            .human_message_tool_use(
+                exchange_id.to_owned(),
+                user_message.to_owned(),
+                all_files,
+                open_files,
+                shell,
+                UserContext::default(),
+            )
+            .await;
         println!("session_service::session_human_message_tool_use");
         let _ = self.save_to_storage(&session).await;
 
@@ -507,7 +509,6 @@ impl SessionService {
         Ok(())
     }
 
-    /// TODO(skcd): Pick up the integration from here for the tool use
     pub async fn tool_use_agentic(
         &self,
         session_id: String,
@@ -527,39 +528,42 @@ impl SessionService {
         mut message_properties: SymbolEventMessageProperties,
     ) -> Result<(), SymbolError> {
         println!("session_service::tool_use_agentic::start");
-        let mut session = if let Ok(session) = self.load_from_storage(storage_path.to_owned()).await
-        {
-            println!(
-                "session_service::load_from_storage_ok::session_id({})",
-                &session_id
-            );
-            session
-        } else {
-            self.create_new_session_with_tools(
-                &session_id,
-                project_labels.to_vec(),
-                repo_ref.clone(),
-                storage_path,
-                vec![
-                    ToolType::ListFiles,
-                    ToolType::SearchFileContentWithRegex,
-                    ToolType::OpenFile,
-                    if is_midwit_tool_agent {
-                        ToolType::CodeEditorTool
-                    } else {
-                        ToolType::CodeEditing
-                    },
-                    ToolType::LSPDiagnostics,
-                    // disable for testing
-                    ToolType::AskFollowupQuestions,
-                    ToolType::AttemptCompletion,
-                    ToolType::RepoMapGeneration,
-                    ToolType::TerminalCommand,
-                    // ToolType::DynamicMCPTool, // why not showing up??
-                ],
-                UserContext::default(),
-            )
-        };
+        let mut session =
+            if let Ok(session) = self.load_from_storage(storage_path.to_owned()).await {
+                println!(
+                    "session_service::load_from_storage_ok::session_id({})",
+                    &session_id
+                );
+                session
+            } else {
+                self.create_new_session_with_tools(
+                    &session_id,
+                    project_labels.to_vec(),
+                    repo_ref.clone(),
+                    storage_path,
+                    vec![],
+                    UserContext::default(),
+                )
+            }
+            // always update the tools over here, no matter what the session had before
+            // this is essential because the same session might be crossing over from
+            // a chat or edit
+            .set_tools(vec![
+                ToolType::ListFiles,
+                ToolType::SearchFileContentWithRegex,
+                ToolType::OpenFile,
+                if is_midwit_tool_agent {
+                    ToolType::CodeEditorTool
+                } else {
+                    ToolType::CodeEditing
+                },
+                ToolType::LSPDiagnostics,
+                // disable for testing
+                ToolType::AskFollowupQuestions,
+                ToolType::AttemptCompletion,
+                ToolType::RepoMapGeneration,
+                ToolType::TerminalCommand,
+            ]);
 
         // os can be passed over here safely since we can assume the sidecar is running
         // close to the vscode server
@@ -572,14 +576,16 @@ impl SessionService {
             None,
         );
 
-        session = session.human_message_tool_use(
-            exchange_id.to_owned(),
-            user_message.to_owned(),
-            all_files,
-            open_files,
-            shell,
-            user_context,
-        );
+        session = session
+            .human_message_tool_use(
+                exchange_id.to_owned(),
+                user_message.to_owned(),
+                all_files,
+                open_files,
+                shell,
+                user_context,
+            )
+            .await;
         let _ = self.save_to_storage(&session).await;
 
         session = session.accept_open_exchanges_if_any(message_properties.clone());
@@ -630,8 +636,6 @@ impl SessionService {
                     )
                     .await
             };
-
-            println!("tool_use_output::{:?}", tool_use_output);
 
             match tool_use_output {
                 Ok(AgentToolUseOutput::Success((tool_input_partial, new_session))) => {

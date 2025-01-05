@@ -132,7 +132,7 @@ Make sure to use this tool if you believe that the code which you just edited co
     fn tool_input_format(&self) -> String {
         format!(
             r#"Parameters: 
-- fs_file_path: (required) The absolute path of the file to get diagnostics for.
+- fs_file_path: (required) The ABSOLUTE path of the file to get diagnostics for.
 
 Usage:
 <get_diagnostics>

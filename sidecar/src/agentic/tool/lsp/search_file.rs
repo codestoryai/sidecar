@@ -406,8 +406,7 @@ Your regex pattern here
 <file_pattern>
 file pattern here (optional)
 </file_pattern>
-</search_files>
-"#
+</search_files>"#
         )
     }
 

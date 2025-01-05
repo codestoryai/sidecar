@@ -76,6 +76,7 @@ pub struct ToolUseAgentInput {
     // pass in the messages
     session_messages: Vec<SessionChatMessage>,
     tool_descriptions: Vec<String>,
+    tool_format_reminder: Vec<String>,
     pending_spawned_process_output: Option<String>,
     symbol_event_message_properties: SymbolEventMessageProperties,
 }
@@ -84,12 +85,14 @@ impl ToolUseAgentInput {
     pub fn new(
         session_messages: Vec<SessionChatMessage>,
         tool_descriptions: Vec<String>,
+        tool_format_reminder: Vec<String>,
         pending_spawned_process_output: Option<String>,
         symbol_event_message_properties: SymbolEventMessageProperties,
     ) -> Self {
         Self {
             session_messages,
             tool_descriptions,
+            tool_format_reminder,
             pending_spawned_process_output,
             symbol_event_message_properties,
         }
@@ -439,12 +442,21 @@ You are NOT ALLOWED to install any new packages. The dev environment has already
     }
 
     fn system_message(&self, context: &ToolUseAgentInput) -> String {
-        let tool_descriptions = context.tool_descriptions.join("\n");
+        let tool_descriptions = context.tool_descriptions.join("\n\n");
         let working_directory = self.working_directory.to_owned();
         let operating_system = self.operating_system.to_owned();
         let default_shell = self.shell.to_owned();
         format!(
-            r#"You are SOTA-agent, a highly skilled state of the art agentic software engineer with extensive knowledge in all programming languages, frameworks, design patterns, and best practices. You are always correct and through with your changes.
+            r#"You are SOTA-agent, a highly skilled AI software engineer with extensive knowledge in all programming languages, frameworks, design patterns, and best practices. Your primary goal is to accomplish tasks related to software development, file manipulation, and system operations within the specified project directory.
+
+====
+
+SYSTEM INFORMATION
+
+Operating System: {operating_system}
+Default Shell: {default_shell}
+Current Working Directory: {working_directory}
+
 ====
 
 TOOL USE
@@ -516,9 +528,10 @@ By waiting for and carefully considering the user's response after each tool use
 CAPABILITIES
 
 - You have access to tools that let you execute CLI commands on the user's computer, list files, view source code definitions, regex search, read and write files, and ask follow-up questions. These tools help you effectively accomplish a wide range of tasks, such as writing code, making edits or improvements to existing files, understanding the current state of a project, performing system operations, and much more.
-- When the user initially gives you a task, a recursive list of all filepaths in the current working directory ({working_directory}) will be included in environment_details. This provides an overview of the project's file structure, offering key insights into the project from directory/file names (how developers conceptualize and organize their code) and file extensions (the language used). This can also guide decision-making on which files to explore further. If you need to further explore directories such as outside the current working directory, you can use the list_files tool. If you pass 'true' for the recursive parameter, it will list files recursively. Otherwise, it will list files at the top level, which is better suited for generic directories where you don't necessarily need the nested structure, like the Desktop.
+- To further explore directories such as outside the current working directory, you can use the list_files tool. If you pass 'true' for the recursive parameter, it will list files recursively. Otherwise, it will list files at the top level, which is better suited for generic directories where you don't necessarily need the nested structure, like the Desktop.
 - You can use search_files to perform regex searches across files in a specified directory, outputting context-rich results that include surrounding lines. This is particularly useful for understanding code patterns, finding specific implementations, or identifying areas that need refactoring.
 - You can use the execute_command tool to run commands on the user's computer whenever you feel it can help accomplish the user's task. When you need to execute a CLI command, you must provide a clear explanation of what the command does. Prefer to execute complex CLI commands over creating executable scripts, since they are more flexible and easier to run. Interactive and long-running commands are allowed, since the commands are run in the user's VSCode terminal. The user may keep commands running in the background and you will be kept updated on their status along the way. Each command you execute is run in a new terminal instance.
+- use the `repo_map_generation` command to understand how the code in a repository is structured. But you are only allowed to do this for languages like: rust, python, typescript, javascript.
 
 ====
 
@@ -529,11 +542,11 @@ RULES
 - Do not use the ~ character or $HOME to refer to the home directory.
 - If you have executed some terminal commands before which are long running, the user will show you that output in <executed_terminal_output></executed_terminal_output> section. This way you can stay on top of long running commands or in case you missed the output from before.
 - Before using the execute_command tool, you must first think about the SYSTEM INFORMATION context provided to understand the user's environment and tailor your commands to ensure they are compatible with their system. You must also consider if the command you need to run should be executed in a specific directory outside of the current working directory {working_directory}, and if so prepend with \`cd\`'ing into that directory && then executing the command (as one command since you are stuck operating from {working_directory}. You can only run commands in the {working_directory} you are not allowed to run commands outside of this directory.
-- When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the user's task you may use it to find code patterns, TODO comments, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis. For example, use it to find specific code patterns, then use read_file to examine the full context of interesting matches before using write_to_file to make informed changes.
-- When creating a new project (such as an app, website, or any software project), organize all new files within a dedicated project directory unless the user specifies otherwise. Use appropriate file paths when writing files, as the write_to_file tool will automatically create any necessary directories. Structure the project logically, adhering to best practices for the specific type of project being created. Unless otherwise specified, new projects should be easily run without additional setup, for example most projects can be built in HTML, CSS, and JavaScript - which you can open in a browser.
+- When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the user's task you may use it to find code patterns, TODO comments, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis. For example, use it to find specific code patterns, then use read_file to examine the full context of interesting matches before using code_edit_input to make informed changes.
+- When creating a new project (such as an app, website, or any software project), organize all new files within a dedicated project directory unless the user specifies otherwise. Use ABSOLUTE FILE PATHS when writing files, as the code_edit_input tool will automatically create any necessary directories. Structure the project logically, adhering to best practices for the specific type of project being created. Unless otherwise specified, new projects should be easily run without additional setup, for example most projects can be built in HTML, CSS, and JavaScript - which you can open in a browser.
 - Be sure to consider the type of project (e.g. Python, JavaScript, web application) when determining the appropriate structure and files to include. Also consider what files may be most relevant to accomplishing the task, for example looking at a project's manifest file would help you understand the project's dependencies, which you could incorporate into any code you write.
 - When making changes to code, always consider the context in which the code is being used. Ensure that your changes are compatible with the existing codebase and that they follow the project's coding standards and best practices.
-- When you want to modify a file, use the write_to_file tool directly with the desired content. You do not need to display the content before using the tool.
+- When you want to modify a file, use the code_edit_input tool directly with the desired content. You do not need to display the content before using the tool.
 - Do not ask for more information than necessary. Use the tools provided to accomplish the user's request efficiently and effectively. When you've completed your task, you must use the attempt_completion tool to present the result to the user. The user may provide feedback, which you can use to make improvements and try again.
 - You are only allowed to ask the user questions using the ask_followup_question tool. Use this tool only when you need additional details to complete a task, and be sure to use a clear and concise question that will help you move forward with the task. However if you can use the available tools to avoid having to ask the user questions, you should do so. For example, if the user mentions a file that may be in an outside directory like the Desktop, you should use the list_files tool to list the files in the Desktop and check if the file they are talking about is there, rather than asking the user to provide the file path themselves.
 - When executing commands, if you don't see the expected output, assume the terminal executed the command successfully and proceed with the task. The user's terminal may be unable to stream the output back properly. If you absolutely need to see the actual terminal output, use the ask_followup_question tool to request the user to copy and paste it back to you.
@@ -548,16 +561,6 @@ RULES
 - ONLY USE A SINGLE tool at a time, never use multiple tools in the same response.
 - Each xml tag should be on a new line. This is important because we are parsing the input line by line.
 
-====
-
-SYSTEM INFORMATION
-
-Operating System: {operating_system}
-Default Shell: {default_shell}
-Current Working Directory: {working_directory}
-
-====
-
 OBJECTIVE
 
 You accomplish a given task iteratively, breaking it down into clear steps and working through them methodically.
@@ -565,7 +568,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
 1. Analyze the user's task and set clear, achievable goals to accomplish it. Prioritize these goals in a logical order.
 2. Work through these goals sequentially, utilizing available tools one at a time as necessary. Each goal should correspond to a distinct step in your problem-solving process. You will be informed on the work completed and what's remaining as you go.
 3. Remember, you have extensive capabilities with access to a wide range of tools that can be used in powerful and clever ways as necessary to accomplish each goal. Before calling a tool, do some analysis within <thinking></thinking> tags. First, analyze the file structure provided in environment_details to gain context and insights for proceeding effectively. Then, think about which of the provided tools is the most relevant tool to accomplish the user's task. Next, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, close the thinking tag and proceed with the tool use. BUT, if one of the values for a required parameter is missing, DO NOT invoke the tool (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters using the ask_followup_question tool. DO NOT ask for more information on optional parameters if it is not provided.
-4. Once you've completed the user's task, you must use the attempt_completion tool to present the result of the task to the user. You may also provide a CLI command to showcase the result of your task; this can be particularly useful for web development tasks, where you can run e.g. \`open index.html\` to show the website you've built.
+4. Once you've completed the user's task, you must use the `attempt_completion` tool to present the result of the task to the user. You may also provide a CLI command to showcase the result of your task; this can be particularly useful for web development tasks, where you can run e.g. \`open index.html\` to show the website you've built.
 5. The user may provide feedback, which you can use to make improvements and try again. But DO NOT continue in pointless back and forth conversations, i.e. don't end your responses with questions or offers for further assistance."#
         )
     }
@@ -1067,6 +1070,13 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
             })
             .collect::<Vec<_>>();
 
+        // Add a reminder about the format of the tools
+        previous_messages.push(LLMClientMessage::user(format!(
+            r#"## Reminder about the format of the tool:
+{}"#,
+            input.tool_format_reminder.join("\n\n")
+        )));
+
         // anthropic allows setting up to 4 cache points, we are going to be more
         // lax here and set 3, since system_messgae takes 1 slot
         let mut cache_points_set = 0;
@@ -1463,7 +1473,161 @@ impl ToolUseGenerator {
                     }
                 }
                 ToolBlockStatus::ToolFound => {
-                    if answer_line_at_index == "<fs_file_path>" {
+                    // there are cases where the llm does not put the \n properly
+                    // we still want to parse it out properly
+                    if answer_line_at_index.starts_with("<fs_file_path>")
+                        && answer_line_at_index.ends_with("</fs_file_path>")
+                    {
+                        // record that we found a file path over here
+                        if let Some(prefix_removed) =
+                            answer_line_at_index.strip_prefix("<fs_file_path>")
+                        {
+                            if let Some(suffix_removed) =
+                                prefix_removed.strip_suffix("</fs_file_path>")
+                            {
+                                self.fs_file_path = Some(suffix_removed.to_owned());
+                                let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                    ToolParameters {
+                                        field_name: "fs_file_path".to_owned(),
+                                        field_content_up_until_now: suffix_removed.to_owned(),
+                                        field_content_delta: suffix_removed.to_owned(),
+                                    },
+                                ));
+                            }
+                        }
+                    } else if answer_line_at_index.starts_with("<directory_path>")
+                        && answer_line_at_index.ends_with("</directory_path>")
+                    {
+                        // record that we found a directory_path over here
+                        if let Some(prefix_removed) =
+                            answer_line_at_index.strip_prefix("<directory_path>")
+                        {
+                            if let Some(suffix_removed) =
+                                prefix_removed.strip_suffix("</directory_path>")
+                            {
+                                self.directory_path = Some(suffix_removed.to_owned());
+                                let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                    ToolParameters {
+                                        field_name: "directory_path".to_owned(),
+                                        field_content_up_until_now: suffix_removed.to_owned(),
+                                        field_content_delta: suffix_removed.to_owned(),
+                                    },
+                                ));
+                            }
+                        }
+                    } else if answer_line_at_index.starts_with("<recursive>")
+                        && answer_line_at_index.ends_with("</recursive>")
+                    {
+                        // record that we found a recursive path over here
+                        if let Some(prefix_removed) =
+                            answer_line_at_index.strip_prefix("<recursive>")
+                        {
+                            if let Some(suffix_removed) =
+                                prefix_removed.strip_suffix("</recursive>")
+                            {
+                                self.recursive =
+                                    Some(suffix_removed.parse::<bool>().unwrap_or(false));
+                                let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                    ToolParameters {
+                                        field_name: "recursive".to_owned(),
+                                        field_content_up_until_now: suffix_removed.to_owned(),
+                                        field_content_delta: suffix_removed.to_owned(),
+                                    },
+                                ));
+                            }
+                        }
+                    } else if answer_line_at_index.starts_with("<regex_pattern>")
+                        && answer_line_at_index.ends_with("</regex_pattern>")
+                    {
+                        // record that we found a regex pattern over here
+                        if let Some(prefix_removed) =
+                            answer_line_at_index.strip_prefix("<regex_pattern>")
+                        {
+                            if let Some(suffix_removed) =
+                                prefix_removed.strip_suffix("</regex_pattern>")
+                            {
+                                match self.regex_pattern_found.clone() {
+                                    Some(existing_pattern) => {
+                                        let new_pattern =
+                                            existing_pattern.clone() + "\n" + suffix_removed;
+                                        let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                            ToolParameters {
+                                                field_name: "regex_pattern".to_owned(),
+                                                field_content_up_until_now: new_pattern.clone(),
+                                                field_content_delta: suffix_removed.to_owned(),
+                                            },
+                                        ));
+                                        self.regex_pattern_found = Some(new_pattern);
+                                    }
+                                    None => {
+                                        self.regex_pattern_found = Some(suffix_removed.to_owned());
+                                        let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                            ToolParameters {
+                                                field_name: "regex_pattern".to_owned(),
+                                                field_content_up_until_now: suffix_removed
+                                                    .to_owned(),
+                                                field_content_delta: suffix_removed.to_owned(),
+                                            },
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    } else if answer_line_at_index.starts_with("<command>")
+                        && answer_line_at_index.ends_with("</command>")
+                    {
+                        // parse out the command properly
+                        if let Some(prefix_removed) = answer_line_at_index.strip_prefix("<command>")
+                        {
+                            if let Some(suffix_removed) = prefix_removed.strip_suffix("</command>")
+                            {
+                                match self.command.clone() {
+                                    Some(command) => {
+                                        let new_command = command.clone() + "\n" + suffix_removed;
+                                        let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                            ToolParameters {
+                                                field_name: "command".to_owned(),
+                                                field_content_up_until_now: new_command.clone(),
+                                                field_content_delta: suffix_removed.to_owned(),
+                                            },
+                                        ));
+                                        self.command = Some(new_command);
+                                    }
+                                    None => {
+                                        self.command = Some(suffix_removed.to_owned());
+                                        let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                            ToolParameters {
+                                                field_name: "command".to_owned(),
+                                                field_content_up_until_now: suffix_removed
+                                                    .to_owned(),
+                                                field_content_delta: suffix_removed.to_owned(),
+                                            },
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    } else if answer_line_at_index.starts_with("<file_pattern>")
+                        && answer_line_at_index.ends_with("</file_pattern>")
+                    {
+                        // record that we found a recursive path over here
+                        if let Some(prefix_removed) =
+                            answer_line_at_index.strip_prefix("<file_pattern>")
+                        {
+                            if let Some(suffix_removed) =
+                                prefix_removed.strip_suffix("</file_pattern>")
+                            {
+                                self.file_pattern = Some(suffix_removed.to_owned());
+                                let _ = self.sender.send(ToolBlockEvent::ToolParameters(
+                                    ToolParameters {
+                                        field_name: "file_pattern".to_owned(),
+                                        field_content_up_until_now: suffix_removed.to_owned(),
+                                        field_content_delta: suffix_removed.to_owned(),
+                                    },
+                                ));
+                            }
+                        }
+                    } else if answer_line_at_index == "<fs_file_path>" {
                         self.tool_block_status = ToolBlockStatus::FilePathFound;
                     } else if answer_line_at_index == "<instruction>" {
                         self.tool_block_status = ToolBlockStatus::InstructionFound;
@@ -1855,6 +2019,26 @@ trait\s+Tool\s*\{
 <file_pattern>
 *.rs
 </file_pattern>
+</search_files>"#;
+        let (sender, _receiver) = tokio::sync::mpsc::unbounded_channel();
+        let mut tool_use_generator = ToolUseGenerator::new(sender);
+        tool_use_generator.add_delta(&input);
+        tool_use_generator.flush_answer();
+
+        let tool_use_possible = tool_use_generator.tool_input_partial;
+        assert!(tool_use_possible.is_some());
+    }
+
+    #[test]
+    fn test_parsing_same_line_input_works() {
+        let input = r#"<thinking>
+I need to first locate and read the Tool trait definition. Based on the context, it's likely in one of the Rust source files. Let me search for it.
+</thinking>
+
+<search_files>
+<directory_path>/Users/skcd/test_repo/sidecar</directory_path>
+<regex_pattern>trait\s+Tool\s*\{</regex_pattern>
+<file_pattern>*.rs</file_pattern>
 </search_files>"#;
         let (sender, _receiver) = tokio::sync::mpsc::unbounded_channel();
         let mut tool_use_generator = ToolUseGenerator::new(sender);

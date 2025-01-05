@@ -9,8 +9,8 @@ use crate::agentic::tool::code_edit::code_editor::{CodeEditorParameters, EditorC
 /// and does not make sure of the editor apis we will do the migration
 /// once we are done with integrating a first pass with the editor properly
 pub struct AnthropicCodeEditorUse {
-    tool_thinking: String,
-    tool_box: Arc<ToolBox>,
+    _tool_thinking: String,
+    _tool_box: Arc<ToolBox>,
 }
 
 fn maybe_truncate(s: &str) -> String {
@@ -28,8 +28,8 @@ fn maybe_truncate(s: &str) -> String {
 impl AnthropicCodeEditorUse {
     pub fn new(tool_thinking: String, tool_box: Arc<ToolBox>) -> Self {
         Self {
-            tool_thinking,
-            tool_box,
+            _tool_thinking: tool_thinking,
+            _tool_box: tool_box,
         }
     }
     pub async fn run_command(&self, params: CodeEditorParameters) -> Result<String, String> {

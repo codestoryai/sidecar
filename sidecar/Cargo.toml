@@ -1,6 +1,6 @@
 [package]
 name = "sidecar"
-version = "0.1.4"
+version = "0.1.9"
 edition = "2021"
 build = "build.rs"
 

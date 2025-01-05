@@ -289,8 +289,7 @@ Directory path here
 <recursive>
 true or false
 </recursive>
-</list_files>
-"#
+</list_files>"#
         )
     }
 

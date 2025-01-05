@@ -133,8 +133,7 @@ Use this when you need to perform system operations or run specific commands to 
 You must tailor your command to the user's system and provide a clear explanation of what the command does.
 Prefer to execute complex CLI commands over creating executable scripts, as they are more flexible and easier to run.
 Commands will be executed in the current working directory.
-Note: You MUST append a `sleep 0.05` to the end of the command for commands that will complete in under 50ms, as this will circumvent a known issue with the terminal tool where it will sometimes not return the output when the command completes too quickly.
-"#
+Note: You MUST append a `sleep 0.05` to the end of the command for commands that will complete in under 50ms, as this will circumvent a known issue with the terminal tool where it will sometimes not return the output when the command completes too quickly."#
         )
     }
 
@@ -148,8 +147,7 @@ Usage:
 <command>
 Your command here
 </command>
-</execute_command>
-"#
+</execute_command>"#
         )
     }
 
