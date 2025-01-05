@@ -1010,7 +1010,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
                         })?,
                     ),
                     _ => {
-                        println!("unknow tool found: {}", tool_type.red());
+                        println!("unknown tool found: {}", tool_type.red());
                         return Err(SymbolError::WrongToolOutput);
                     }
                 };
