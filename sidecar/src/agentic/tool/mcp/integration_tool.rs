@@ -11,9 +11,6 @@ use crate::agentic::tool::{
     r#type::{Tool, ToolRewardScale, ToolType},
 };
 
-// TODO: remove before merge
-// old single-broker approach
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolDescriptor {
     pub name: String,
@@ -35,159 +32,16 @@ pub struct ToolListResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolCallResponse {
+pub struct GenericToolCallResponse {
     pub result: Value,
+    // value is string or JSON ?
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum MCPIntegrationToolResponse {
     ToolList(ToolListResponse),
-    ToolCall(ToolCallResponse),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum MCPIntegrationToolAction {
-    List,
-    Call,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct MCPIntegrationToolQuery {
-    pub action: MCPIntegrationToolAction,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub server_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_name: Option<String>,
-    #[serde(default)]
-    pub arguments: Value,
-}
-
-impl MCPIntegrationToolQuery {
-    pub fn to_json() -> Value {
-        serde_json::json!({
-            "action": "list | call",
-            "server_name": "string (required if action=call)",
-            "tool_name": "string (required if action=call)",
-            "arguments": {}
-        })
-    }
-}
-
-/// The old broker that can do list/call across multiple servers
-pub struct MCPIntegrationToolBroker {
-    servers: HashMap<String, Client>,
-}
-
-impl MCPIntegrationToolBroker {
-    pub fn new(servers: HashMap<String, Client>) -> Self {
-        Self { servers }
-    }
-
-    async fn list_all_tools(&self) -> Result<MCPIntegrationToolResponse, ToolError> {
-        let mut server_list = Vec::new();
-        for (server_name, client) in &self.servers {
-            let tools_value = client.list_tools().await.map_err(|e| {
-                ToolError::InvocationError(format!(
-                    "Failed to list tools from '{}': {}",
-                    server_name, e
-                ))
-            })?;
-
-            let mut descriptors = Vec::new();
-            for tool in tools_value.tools {
-                descriptors.push(ToolDescriptor {
-                    name: tool.name,
-                    description: Some(tool.description),
-                    schema: Some(tool.schema),
-                });
-            }
-            server_list.push(ServerTools {
-                server_name: server_name.clone(),
-                tools: descriptors,
-            });
-        }
-        Ok(MCPIntegrationToolResponse::ToolList(ToolListResponse {
-            servers: server_list,
-        }))
-    }
-
-    async fn call_tool(
-        &self,
-        server_name: &str,
-        tool_name: &str,
-        arguments: Value,
-    ) -> Result<MCPIntegrationToolResponse, ToolError> {
-        let client = self.servers.get(server_name).ok_or_else(|| {
-            ToolError::InvalidInput(format!("Server '{}' not found", server_name))
-        })?;
-
-        let res = client.call_tool(tool_name, arguments).await.map_err(|e| {
-            ToolError::InvocationError(format!("call_tool failed for '{}': {}", tool_name, e))
-        })?;
-
-        Ok(MCPIntegrationToolResponse::ToolCall(ToolCallResponse {
-            result: serde_json::to_value(res).map_err(|e| {
-                ToolError::InvocationError(format!("Failed to serialize tool result: {}", e))
-            })?,
-        }))
-    }
-
-    async fn handle_query(
-        &self,
-        query: MCPIntegrationToolQuery,
-    ) -> Result<MCPIntegrationToolResponse, ToolError> {
-        match query.action {
-            MCPIntegrationToolAction::List => self.list_all_tools().await,
-            MCPIntegrationToolAction::Call => {
-                let server_name = query.server_name.as_ref().ok_or_else(|| {
-                    ToolError::InvalidInput("Missing 'server_name' for call".to_string())
-                })?;
-                let tool_name = query.tool_name.as_ref().ok_or_else(|| {
-                    ToolError::InvalidInput("Missing 'tool_name' for call".to_string())
-                })?;
-
-                self.call_tool(server_name, tool_name, query.arguments.clone())
-                    .await
-            }
-        }
-    }
-}
-
-#[async_trait]
-impl Tool for MCPIntegrationToolBroker {
-    async fn invoke(&self, input: ToolInput) -> Result<ToolOutput, ToolError> {
-        let query = match input {
-            ToolInput::MCPIntegrationTool(q) => q,
-            _ => {
-                return Err(ToolError::InvalidInput(
-                    "Expected MCPIntegrationTool input".to_string(),
-                ))
-            }
-        };
-
-        let response = self.handle_query(query).await?;
-        Ok(ToolOutput::MCPIntegration(response))
-    }
-
-    fn tool_description(&self) -> String {
-        // TODO: change description to aggregate descriptions of all servers (or maybe a simpler option?)
-        "The MCP Integration tool: Use 'action':'list' to list all servers & tools, 'action':'call' to invoke a tool.".to_string()
-    }
-
-    fn tool_input_format(&self) -> String {
-        r#"{"action":"list"} or {"action":"call","server_name":"string","tool_name":"string","arguments":{}}"#.to_string()
-    }
-
-    fn get_evaluation_criteria(&self, _trajectory_length: usize) -> Vec<String> {
-        vec![]
-    }
-
-    fn get_reward_scale(&self, _trajectory_length: usize) -> Vec<ToolRewardScale> {
-        vec![]
-    }
+    ToolCall(GenericToolCallResponse),
 }
 
 /// example, if the server "notes_server" has a tool
@@ -316,7 +170,7 @@ impl Tool for DynamicMCPTool {
 
         // Return as typical
         Ok(ToolOutput::MCPIntegration(
-            MCPIntegrationToolResponse::ToolCall(ToolCallResponse { result: value }),
+            MCPIntegrationToolResponse::ToolCall(GenericToolCallResponse { result: value }),
         ))
     }
 
@@ -338,5 +192,147 @@ impl Tool for DynamicMCPTool {
 
     fn get_reward_scale(&self, _trajectory_length: usize) -> Vec<ToolRewardScale> {
         vec![]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::agentic::tool::{
+        input::{DynamicMCPToolPartial, ToolInput},
+        lsp::open_file::OpenFileRequest,
+    };
+    use mcp_client_rs::client::ClientBuilder;
+    use tokio;
+
+    async fn setup_test_client() -> anyhow::Result<Arc<Client>> {
+        let builder = ClientBuilder::new("uvx")
+            .arg("notes-simple");
+
+        let client = builder.spawn_and_initialize().await?;
+        Ok(Arc::new(client))
+    }
+
+    #[tokio::test]
+    async fn test_dynamic_mcp_tool_creation() -> anyhow::Result<()> {
+        let client = setup_test_client().await?;
+
+        // List available tools
+        let list_res = client.list_tools().await?;
+        assert!(
+            !list_res.tools.is_empty(),
+            "Server should have at least one tool"
+        );
+
+        // Create a DynamicMCPTool for each tool
+        for tool_info in list_res.tools {
+            let dyn_tool = DynamicMCPTool::new(
+                "notes_simple".to_string(),
+                tool_info.name.clone(),
+                tool_info.description.clone(),
+                tool_info.input_schema.clone(),
+                Arc::clone(&client),
+            );
+
+            // Test tool description and input format
+            let desc = dyn_tool.tool_description();
+            assert!(!desc.is_empty(), "Tool description should not be empty");
+
+            let input_format = dyn_tool.tool_input_format();
+            assert!(
+                !input_format.is_empty(),
+                "Tool input format should not be empty"
+            );
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_dynamic_mcp_tool_invocation() -> anyhow::Result<()> {
+        let client = setup_test_client().await?;
+
+        // Create a test note using the add_note tool
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), "Test Note".to_string());
+        fields.insert("content".to_string(), "This is a test note".to_string());
+
+        let dyn_tool = DynamicMCPTool::new(
+            "notes_simple".to_string(),
+            "add-note".to_string(),
+            "Add a new note".to_string(),
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "content": {"type": "string"}
+                },
+                "required": ["name", "content"]
+            }),
+            Arc::clone(&client),
+        );
+
+        let input = ToolInput::DynamicMCPTool(DynamicMCPToolPartial {
+            tool_name: "add-note".to_string(),
+            fields,
+        });
+
+        let result = dyn_tool.invoke(input).await?;
+
+        // Verify the response
+        match result {
+            ToolOutput::MCPIntegration(MCPIntegrationToolResponse::ToolCall(response)) => {
+                assert!(
+                    response.result.is_object(),
+                    "Response should be a JSON object"
+                );
+            }
+            _ => panic!("Unexpected response type"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_dynamic_mcp_tool_errors() -> anyhow::Result<()> {
+        let client = setup_test_client().await?;
+
+        let dyn_tool = DynamicMCPTool::new(
+            "notes_simple".to_string(),
+            "add-note".to_string(),
+            "Add a new note".to_string(),
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "content": {"type": "string"}
+                },
+                "required": ["name", "content"]
+            }),
+            Arc::clone(&client),
+        );
+
+        // Test wrong tool input type
+        let wrong_input = ToolInput::OpenFile(OpenFileRequest::new(
+            "test.txt".to_string(),
+            "http://localhost".to_string(),
+        ));
+        let result = dyn_tool.invoke(wrong_input).await;
+        assert!(matches!(result, Err(ToolError::WrongToolInput(_))));
+
+        // Test missing required field
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), "Test Note".to_string());
+        // Missing content field
+
+        let input = ToolInput::DynamicMCPTool(DynamicMCPToolPartial {
+            tool_name: "add_note".to_string(),
+            fields,
+        });
+
+        let result = dyn_tool.invoke(input).await;
+        assert!(result.is_err(), "Should fail with missing required field");
+
+        Ok(())
     }
 }
