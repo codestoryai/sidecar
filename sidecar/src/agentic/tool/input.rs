@@ -61,7 +61,6 @@ use super::{
         subprocess_spawned_output::SubProcessSpawnedPendingOutputRequest,
         undo_changes::UndoChangesMadeDuringExchangeRequest,
     },
-    mcp::integration_tool::MCPIntegrationToolQuery,
     plan::{
         add_steps::PlanAddRequest, generator::StepGeneratorRequest, reasoning::ReasoningRequest,
         updater::PlanUpdateRequest,
@@ -199,8 +198,8 @@ impl ToolInputPartial {
             ToolType::RepoMapGeneration => None,
             ToolType::TestRunner => Some(TestRunnerRequestPartial::to_json()),
             ToolType::CodeEditorTool => Some(CodeEditorParameters::to_json()),
-            ToolType::MCPIntegrationTool => Some(MCPIntegrationToolQuery::to_json()),
             ToolType::DynamicMCPTool(_name) => None,
+            // TODO: q? explain
             _ => None,
         }
     }
@@ -328,8 +327,6 @@ pub enum ToolInput {
     RewardGeneration(RewardGenerationRequest),
     // Feedback generation
     FeedbackGeneration(FeedbackGenerationRequest),
-    // MCP Integration tool
-    MCPIntegrationTool(MCPIntegrationToolQuery),
     // Dynamic MCP tool
     DynamicMCPTool(DynamicMCPToolPartial),
 }
@@ -420,7 +417,6 @@ impl ToolInput {
             ToolInput::RunTests(_) => ToolType::TestRunner,
             ToolInput::RewardGeneration(_) => ToolType::RewardGeneration,
             ToolInput::FeedbackGeneration(_) => ToolType::FeedbackGeneration,
-            ToolInput::MCPIntegrationTool(_) => ToolType::MCPIntegrationTool,
             ToolInput::DynamicMCPTool(partial) => {
                 ToolType::DynamicMCPTool(partial.tool_name.clone())
             }
@@ -431,7 +427,7 @@ impl ToolInput {
         if let ToolInput::DynamicMCPTool(partial) = self {
             Ok(partial)
         } else {
-            Err(ToolError::WrongToolInput(ToolType::MCPIntegrationTool))
+            Err(ToolError::WrongToolInput(ToolType::FeedbackGeneration))
         }
     }
 

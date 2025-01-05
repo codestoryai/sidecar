@@ -149,7 +149,6 @@ pub enum ToolType {
     FeedbackGeneration,
     // Code editor tool (this is special for anthropic)
     CodeEditorTool,
-    MCPIntegrationTool,
     DynamicMCPTool(String),
 }
 
@@ -252,10 +251,6 @@ impl std::fmt::Display for ToolType {
             ToolType::FeedbackGeneration => write!(f, "feedback_generation"),
             ToolType::CodeEditorTool => write!(f, "str_replace_editor"),
             ToolType::DynamicMCPTool(name) => write!(f, "mcp: {}", name),
-            ToolType::MCPIntegrationTool => write!(
-                f,
-                "Gives access to a multiple tools, which you can list via list_tools and invoke "
-            ),
         }
     }
 }

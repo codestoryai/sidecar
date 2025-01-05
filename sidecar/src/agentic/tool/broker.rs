@@ -528,7 +528,7 @@ impl ToolBroker {
                     server_name.clone(),
                     name.clone(),
                     tool_info.description,
-                    tool_info.schema,
+                    tool_info.input_schema,
                     Arc::clone(&client),
                 );
 

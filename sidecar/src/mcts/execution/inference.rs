@@ -560,6 +560,9 @@ Always include the <thinking></thinking> section before using the tool."#
                     true,
                 ))
             }
+            ToolInputPartial::DynamicMCPTool(_) => {
+                todo!("Dynamic MCP tool is not supported with the inference engine")
+            }
             ToolInputPartial::CodeEditing(_) => {
                 todo!("code editing is not supported with the inference engine for code editing, use anthropic computer use api instead")
             }
