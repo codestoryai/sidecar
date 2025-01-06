@@ -626,9 +626,9 @@ impl Exchange {
                             SessionChatMessage::assistant(
                                 format!(
                                     r#"<thinking>
-    {thinking}
-    </thinking>
-    {}"#,
+{thinking}
+</thinking>
+{}"#,
                                     tool_input_parameters.to_string()
                                 ),
                                 vec![],

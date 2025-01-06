@@ -882,7 +882,7 @@ impl Tool for SearchAndReplaceEditing {
         }
 
         println!(
-            "tool::search_and_replace_editing::finsihed_delta_streaming::time_now({:?})",
+            "tool::search_and_replace_editing::finished_delta_streaming::time_now({:?})",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|duration| duration.as_millis())
@@ -1076,7 +1076,7 @@ impl SearchAndReplaceAccumulator {
                                 // to do this: we need to do the following:
                                 // - go back couple of steps here (or the line length of the accumulated block + 2 (for ```language and Locating relevant snippet...))
                                 // - and the replace those lines with a generating code thingy over here instead
-                                let accumualated_length =
+                                let accumulated_length =
                                     "".lines().into_iter().collect::<Vec<_>>().len();
                                 let mut answer_lines = self
                                     .answer_to_show
@@ -1091,7 +1091,7 @@ impl SearchAndReplaceAccumulator {
                                 // then the ```{language}
                                 // accumulated lines for the search block
                                 // and the last ``` which we leave for rendering purposes
-                                answer_lines.truncate(answer_lines_len - (accumualated_length + 3));
+                                answer_lines.truncate(answer_lines_len - (accumulated_length + 3));
                                 answer_lines.push("Generating code....".to_owned());
                                 self.answer_to_show = answer_lines.join("\n");
                             }
@@ -1104,7 +1104,7 @@ impl SearchAndReplaceAccumulator {
                                 // to do this: we need to do the following:
                                 // - go back couple of steps here (or the line length of the accumulated block + 3 (for ```language and Locating relevant snippet... and the last backticks which are present))
                                 // - and the replace those lines with a "No snippet found in the codebase"
-                                let accumualated_length =
+                                let accumulated_length =
                                     "".lines().into_iter().collect::<Vec<_>>().len();
                                 let mut answer_lines = self
                                     .answer_to_show
@@ -1114,7 +1114,7 @@ impl SearchAndReplaceAccumulator {
                                     .map(|answer_line| answer_line.to_owned())
                                     .collect::<Vec<_>>();
                                 let answer_lines_len = answer_lines.len();
-                                answer_lines.truncate(answer_lines_len - (accumualated_length + 3));
+                                answer_lines.truncate(answer_lines_len - (accumulated_length + 3));
                                 answer_lines
                                     .push("Failed to find relevant code snippet...".to_owned());
                                 self.answer_to_show = answer_lines.join("\n");
@@ -1163,7 +1163,7 @@ impl SearchAndReplaceAccumulator {
                                 // to do this: we need to do the following:
                                 // - go back couple of steps here (or the line length of the accumulated block + 2 (for ```language and Locating relevant snippet...))
                                 // - and the replace those lines with a generating code thingy over here instead
-                                let accumualated_length =
+                                let accumulated_length =
                                     accumulated.lines().into_iter().collect::<Vec<_>>().len();
                                 let mut answer_lines = self
                                     .answer_to_show
@@ -1178,7 +1178,7 @@ impl SearchAndReplaceAccumulator {
                                 // then the ```{language}
                                 // accumulated lines for the search block
                                 // and the last ``` which we leave for rendering purposes
-                                answer_lines.truncate(answer_lines_len - (accumualated_length + 3));
+                                answer_lines.truncate(answer_lines_len - (accumulated_length + 3));
                                 answer_lines.push("Generating code....".to_owned());
                                 self.answer_to_show = answer_lines.join("\n");
                             }
@@ -1191,7 +1191,7 @@ impl SearchAndReplaceAccumulator {
                                 // to do this: we need to do the following:
                                 // - go back couple of steps here (or the line length of the accumulated block + 3 (for ```language and Locating relevant snippet... and the last backticks which are present))
                                 // - and the replace those lines with a "No snippet found in the codebase"
-                                let accumualated_length =
+                                let accumulated_length =
                                     accumulated.lines().into_iter().collect::<Vec<_>>().len();
                                 let mut answer_lines = self
                                     .answer_to_show
@@ -1201,7 +1201,7 @@ impl SearchAndReplaceAccumulator {
                                     .map(|answer_line| answer_line.to_owned())
                                     .collect::<Vec<_>>();
                                 let answer_lines_len = answer_lines.len();
-                                answer_lines.truncate(answer_lines_len - (accumualated_length + 3));
+                                answer_lines.truncate(answer_lines_len - (accumulated_length + 3));
                                 answer_lines
                                     .push("Failed to find relevant code snippet...".to_owned());
                                 self.answer_to_show = answer_lines.join("\n");
@@ -1364,48 +1364,7 @@ fn get_range_for_search_block(
 
 #[cfg(test)]
 mod tests {
-    use crate::agentic::tool::{
-        errors::ToolError, input::ToolInput, lsp::open_file::OpenFileResponse, output::ToolOutput,
-        r#type::Tool,
-    };
-
     use super::SearchAndReplaceAccumulator;
-    use async_trait::async_trait;
-
-    struct CacheFileOutput {
-        content: String,
-    }
-
-    #[async_trait]
-    impl Tool for CacheFileOutput {
-        async fn invoke(&self, _input: ToolInput) -> Result<ToolOutput, ToolError> {
-            Ok(ToolOutput::file_open(OpenFileResponse::new(
-                "something".to_owned(),
-                self.content.to_owned(),
-                true,
-                "something".to_owned(),
-            )))
-        }
-
-        fn tool_description(&self) -> String {
-            "".to_owned()
-        }
-
-        fn tool_input_format(&self) -> String {
-            "".to_owned()
-        }
-
-        fn get_evaluation_criteria(&self, trajectory_length: usize) -> Vec<String> {
-            vec![]
-        }
-
-        fn get_reward_scale(
-            &self,
-            _trajectory_length: usize,
-        ) -> Vec<crate::agentic::tool::r#type::ToolRewardScale> {
-            vec![]
-        }
-    }
 
     /// TODO(skcd): Broken test here to debug multiple search and replace blocks being
     /// part of the same edit

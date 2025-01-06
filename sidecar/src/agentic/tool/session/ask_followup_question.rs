@@ -33,10 +33,7 @@ impl AskFollowupQuestionsRequest {
 
     pub fn to_string(&self) -> String {
         format!(
-            r#"<thinking>
-...
-</thinking>
-<ask_followup_question>
+            r#"<ask_followup_question>
 <question>
 {}
 </question>
