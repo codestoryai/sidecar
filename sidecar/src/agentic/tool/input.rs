@@ -1,6 +1,7 @@
 use super::{
     code_edit::{
         code_editor::CodeEditorParameters,
+        computer_use::ComputerUseRequest,
         filter_edit::FilterEditOperationRequest,
         find::FindCodeSelectionInput,
         search_and_replace::SearchAndReplaceEditingRequest,
@@ -198,14 +199,7 @@ pub enum ToolInput {
     QuickFixInvocationRequest(LSPQuickFixInvocationRequest),
     CodeCorrectnessAction(CodeCorrectnessRequest),
     CodeEditingError(CodeEditingErrorRequest),
-    ClassSymbolFollowup(ClassSymbolFollowupRequest),
-    // probe request
-    ProbeCreateQuestionForSymbol(ProbeQuestionForSymbolRequest),
-    ProbeEnoughOrDeeper(ProbeEnoughOrDeeperRequest),
-    ProbeFilterSnippetsSingleSymbol(CodeToProbeSubSymbolRequest),
-    ProbeSubSymbol(CodeToEditFilterRequest),
-    ProbePossibleRequest(CodeSymbolToAskQuestionsRequest),
-    ProbeQuestionAskRequest(CodeSymbolToAskQuestionsRequest),
+    ComputerUse(ComputerUseRequest),
     ProbeFollowAlongSymbol(CodeSymbolFollowAlongForProbing),
     ProbeSummarizeAnswerRequest(CodeSymbolProbingSummarize),
     ProbeTryHardAnswerRequest(ProbeTryHardAnswerSymbolRequest),
@@ -387,6 +381,7 @@ impl ToolInput {
             ToolInput::RunTests(_) => ToolType::TestRunner,
             ToolInput::RewardGeneration(_) => ToolType::RewardGeneration,
             ToolInput::FeedbackGeneration(_) => ToolType::FeedbackGeneration,
+            ToolInput::ComputerUse(_) => ToolType::ComputerUse,
         }
     }
 
@@ -1122,5 +1117,9 @@ impl ToolInput {
         } else {
             Err(ToolError::WrongToolInput(ToolType::TerminalCommand))
         }
+    }
+
+    pub fn is_computer_use(&self) -> bool {
+        matches!(self, Self::ComputerUse(_))
     }
 }

@@ -46,6 +46,74 @@ pub enum TextEditStreaming {
         code_block_index: usize,
         reason: String,
     },
+    ComputerUseStreaming {
+        operation: String,
+        content: Option<String>,
+        target_path: Option<String>,
+        progress: Option<String>,
+        edit_request_id: String,
+        session_id: String,
+        range: Range,
+        plan_step_id: Option<String>,
+    },
+}
+
+impl TextEditStreaming {
+    pub fn start_edit(
+        edit_request_id: String,
+        session_id: String,
+        range: Range,
+        plan_step_id: Option<String>,
+    ) -> Self {
+        Self::ComputerUseStreaming {
+            operation: "start".to_string(),
+            content: None,
+            target_path: None,
+            progress: None,
+            edit_request_id,
+            session_id,
+            range,
+            plan_step_id,
+        }
+    }
+
+    pub fn delta(
+        edit_request_id: String,
+        session_id: String,
+        range: Range,
+        content: Option<String>,
+        progress: Option<String>,
+        plan_step_id: Option<String>,
+    ) -> Self {
+        Self::ComputerUseStreaming {
+            operation: "delta".to_string(),
+            content,
+            target_path: None,
+            progress,
+            edit_request_id,
+            session_id,
+            range,
+            plan_step_id,
+        }
+    }
+
+    pub fn end(
+        edit_request_id: String,
+        session_id: String,
+        range: Range,
+        plan_step_id: Option<String>,
+    ) -> Self {
+        Self::ComputerUseStreaming {
+            operation: "end".to_string(),
+            content: None,
+            target_path: None,
+            progress: None,
+            edit_request_id,
+            session_id,
+            range,
+            plan_step_id,
+        }
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
