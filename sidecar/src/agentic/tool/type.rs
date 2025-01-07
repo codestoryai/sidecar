@@ -1,9 +1,8 @@
 //! Contains the basic tool and how to extract data from it
 
+use super::{errors::ToolError, input::ToolInput, output::ToolOutput};
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
-
-use super::{errors::ToolError, input::ToolInput, output::ToolOutput};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ToolType {
@@ -150,6 +149,7 @@ pub enum ToolType {
     FeedbackGeneration,
     // Code editor tool (this is special for anthropic)
     CodeEditorTool,
+    DynamicMCPTool(String),
 }
 
 impl std::fmt::Display for ToolType {
@@ -250,6 +250,7 @@ impl std::fmt::Display for ToolType {
             ToolType::RewardGeneration => write!(f, "reward_generation"),
             ToolType::FeedbackGeneration => write!(f, "feedback_generation"),
             ToolType::CodeEditorTool => write!(f, "str_replace_editor"),
+            ToolType::DynamicMCPTool(name) => write!(f, "mcp: {}", name),
         }
     }
 }

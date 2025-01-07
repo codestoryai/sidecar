@@ -1693,6 +1693,9 @@ impl SearchTree {
                             tool_type.to_string().magenta().to_string()
                         }
                         ToolInputPartial::TestRunner(_) => tool_type.to_string().red().to_string(),
+                        ToolInputPartial::DynamicMCPTool(_) => {
+                            todo!("")
+                        }
                     };
                     state_params.push(tool_str);
                 }

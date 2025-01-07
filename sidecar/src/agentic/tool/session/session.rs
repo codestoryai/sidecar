@@ -1690,6 +1690,10 @@ Terminal output: {}"#,
             ToolInputPartial::TestRunner(_) => {
                 todo!("test runner command is not supported")
             }
+            // TODO: prolly implement before merge
+            ToolInputPartial::DynamicMCPTool(_) => {
+                todo!("dynamic mcp tool is not supported")
+            }
         };
         Ok(())
     }
@@ -3086,7 +3090,10 @@ Terminal output: {}"#,
             ToolInputPartial::CodeEditorParameters(_code_editor_parameters) => {
                 // we do not use this tool via the session.invoke_tool flow at all
             }
+            _ => {}
+            // TODO: handle MCP tool
         }
+
         Ok(self)
     }
 

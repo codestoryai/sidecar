@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::{
     code_edit::{
         code_editor::CodeEditorParameters,
@@ -80,6 +82,25 @@ use super::{
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DynamicMCPToolPartial {
+    /// The name of the tool, e.g. "add_note"
+    pub tool_name: String,
+    /// A map of <field_name -> user_value> from the LLM
+    pub fields: HashMap<String, String>,
+}
+
+impl DynamicMCPToolPartial {
+    pub fn to_string(&self) -> String {
+        let mut output = format!("<{}>\n", self.tool_name);
+        for (k, v) in &self.fields {
+            output.push_str(&format!("<{}>\n{}\n</{}>\n", k, v, k));
+        }
+        output.push_str(&format!("</{}>\n", self.tool_name));
+        output
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum ToolInputPartial {
     CodeEditing(CodeEditingPartialRequest),
     ListFiles(ListFilesInput),
@@ -92,6 +113,7 @@ pub enum ToolInputPartial {
     RepoMapGeneration(RepoMapGeneratorRequestPartial),
     TestRunner(TestRunnerRequestPartial),
     CodeEditorParameters(CodeEditorParameters),
+    DynamicMCPTool(DynamicMCPToolPartial),
 }
 
 impl ToolInputPartial {
@@ -108,6 +130,7 @@ impl ToolInputPartial {
             Self::RepoMapGeneration(_) => ToolType::RepoMapGeneration,
             Self::TestRunner(_) => ToolType::TestRunner,
             Self::CodeEditorParameters(_) => ToolType::CodeEditorTool,
+            Self::DynamicMCPTool(partial) => ToolType::DynamicMCPTool(partial.tool_name.clone()),
         }
     }
 
@@ -128,6 +151,7 @@ impl ToolInputPartial {
             Self::CodeEditorParameters(code_editor_parameters) => {
                 code_editor_parameters.to_string()
             }
+            Self::DynamicMCPTool(mcp_partial) => mcp_partial.to_string(),
         }
     }
 
@@ -156,6 +180,8 @@ impl ToolInputPartial {
             Self::CodeEditorParameters(code_editor_parameters) => {
                 serde_json::to_value(&code_editor_parameters).ok()
             }
+            // unsure if necessary
+            Self::DynamicMCPTool(mcp_partial) => serde_json::to_value(mcp_partial).ok(),
         }
     }
 
@@ -172,6 +198,8 @@ impl ToolInputPartial {
             ToolType::RepoMapGeneration => None,
             ToolType::TestRunner => Some(TestRunnerRequestPartial::to_json()),
             ToolType::CodeEditorTool => Some(CodeEditorParameters::to_json()),
+            ToolType::DynamicMCPTool(_name) => None,
+            // TODO: q? explain
             _ => None,
         }
     }
@@ -299,6 +327,8 @@ pub enum ToolInput {
     RewardGeneration(RewardGenerationRequest),
     // Feedback generation
     FeedbackGeneration(FeedbackGenerationRequest),
+    // Dynamic MCP tool
+    DynamicMCPTool(DynamicMCPToolPartial),
 }
 
 impl ToolInput {
@@ -387,6 +417,17 @@ impl ToolInput {
             ToolInput::RunTests(_) => ToolType::TestRunner,
             ToolInput::RewardGeneration(_) => ToolType::RewardGeneration,
             ToolInput::FeedbackGeneration(_) => ToolType::FeedbackGeneration,
+            ToolInput::DynamicMCPTool(partial) => {
+                ToolType::DynamicMCPTool(partial.tool_name.clone())
+            }
+        }
+    }
+
+    pub fn is_dynamic_mcp_tool(self) -> Result<DynamicMCPToolPartial, ToolError> {
+        if let ToolInput::DynamicMCPTool(partial) = self {
+            Ok(partial)
+        } else {
+            Err(ToolError::WrongToolInput(ToolType::FeedbackGeneration))
         }
     }
 

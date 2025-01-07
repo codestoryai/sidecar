@@ -1,13 +1,17 @@
+use anyhow::Context;
 use async_trait::async_trait;
-use std::{collections::HashMap, sync::Arc};
-
 use llm_client::broker::LLMBroker;
+use mcp_client_rs::client::Client;
+use mcp_client_rs::client::ClientBuilder;
+use serde::Deserialize;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     agentic::symbol::identifier::LLMProperties, chunking::languages::TSLanguageParsing,
     inline_completion::symbols_tracker::SymbolTrackerInline,
 };
 
+use super::mcp::integration_tool::DynamicMCPTool;
 use super::{
     code_edit::{
         filter_edit::FilterEditOperationBroker, find::FindCodeSectionsToEdit,
@@ -479,7 +483,7 @@ impl ToolBroker {
             ToolType::FeedbackGeneration,
             Box::new(FeedbackClientGenerator::new(llm_client)),
         );
-        // we also want to add the re-ranking tool here, so we invoke it freely
+
         Self { tools }
     }
 
@@ -497,19 +501,66 @@ impl ToolBroker {
         }
     }
 
-    pub fn get_tool_description(&self, tool_type: &ToolType) -> Option<String> {
-        if let Some(tool) = self.tools.get(tool_type) {
-            let tool_description = tool.tool_description();
-            let tool_format = tool.tool_input_format();
-            Some(format!(
-                r#"{tool_description}
-{tool_format}"#
-            ))
-        } else {
-            None
+    /// discover each MCP server in ~/.aide/config.json
+    /// create dynamic tools from each server
+    /// used to augument broker initialization w/MCP tools
+    pub async fn with_mcp(mut self) -> anyhow::Result<Self> {
+        let clients = setup_mcp_clients().await?;
+        if clients.is_empty() {
+            return Ok(self);
         }
+
+        // old
+        // TODO: remove before merge
+        // self.tools.insert(
+        //     ToolType::MCPIntegrationTool,
+        //     Box::new(MCPIntegrationToolBroker::new(clients.clone())),
+        // );
+
+        // Dynamically register each server’s discovered tools as "DynamicMCPTool(tool_name)"
+        let mut known_tool_names = HashMap::new(); // to ensure no duplication across servers
+        for (server_name, client) in clients {
+            let list_res = client.list_tools().await.context(format!(
+                "Failed listing tools from server '{}'",
+                server_name
+            ))?;
+
+            // e.g. "tools" is the server's Vec<{name,description,schema}>
+            for tool_info in list_res.tools {
+                let name = tool_info.name;
+                if let Some(conflict) = known_tool_names.get(&name) {
+                    anyhow::bail!(
+                        "Duplicate dynamic tool name '{}' found: server '{}' vs '{}'",
+                        name,
+                        conflict,
+                        server_name
+                    );
+                }
+                known_tool_names.insert(name.clone(), server_name.clone());
+
+                let dyn_tool = DynamicMCPTool::new(
+                    server_name.clone(),
+                    name.clone(),
+                    tool_info.description,
+                    tool_info.input_schema,
+                    Arc::clone(&client),
+                );
+
+                self.tools
+                    .insert(ToolType::DynamicMCPTool(name), Box::new(dyn_tool));
+            }
+        }
+
+        Ok(self)
     }
 
+    pub fn get_tool_description(&self, tool_type: &ToolType) -> Option<String> {
+        self.tools
+            .get(tool_type)
+            .map(|t| format!("{}\n{}", t.tool_description(), t.tool_input_format()))
+    }
+
+    // do we need this?
     pub fn get_tool_json(&self, tool_type: &ToolType) -> Option<serde_json::Value> {
         ToolInputPartial::to_json(tool_type.clone())
     }
@@ -581,4 +632,70 @@ impl ToolBroker {
             }
         }
     }
+}
+
+// Minimal code for MCP client spawner
+#[derive(Deserialize)]
+struct ServerConfig {
+    command: String,
+    #[serde(default)]
+    args: Vec<String>,
+    #[serde(default)]
+    env: HashMap<String, String>,
+}
+
+#[derive(Deserialize)]
+pub struct RootConfig {
+    #[serde(rename = "mcpServers")]
+    mcp_servers: HashMap<String, ServerConfig>,
+}
+
+/// Set up MCP clients by reading ~/.aide/config.json, spawning each server,
+/// and returning a HashMap<server_name -> Arc<Client>>.
+/// spawn a single MCP process per server, share references.
+async fn setup_mcp_clients() -> anyhow::Result<HashMap<String, Arc<Client>>> {
+    let config_path = dirs::home_dir()
+        .ok_or_else(|| anyhow::anyhow!("Could not determine home directory"))?
+        .join(".aide/config.json");
+
+    if !config_path.exists() {
+        return Ok(HashMap::new());
+    }
+
+    let config_str = tokio::fs::read_to_string(&config_path)
+        .await
+        .context("Failed to read ~/.aide/config.json")?;
+
+    let root_config: RootConfig =
+        serde_json::from_str(&config_str).context("Failed to parse ~/.aide/config.json")?;
+
+    let mut mcp_clients_map = HashMap::new();
+
+    // For each server in the config, spawn an MCP client
+    for (server_name, server_conf) in &root_config.mcp_servers {
+        let mut builder = ClientBuilder::new(&server_conf.command);
+        for arg in &server_conf.args {
+            builder = builder.arg(arg);
+        }
+        for (k, v) in &server_conf.env {
+            builder = builder.env(k, v);
+        }
+
+        match builder.spawn_and_initialize().await {
+            Ok(client) => {
+                let client_arc = Arc::new(client);
+                mcp_clients_map.insert(server_name.clone(), client_arc);
+                eprintln!("Initialized MCP client for '{}'", server_name);
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to initialize MCP client for '{}': {}",
+                    server_name, e
+                );
+                // keep trying other clients
+            }
+        }
+    }
+
+    Ok(mcp_clients_map)
 }
