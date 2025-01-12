@@ -313,6 +313,14 @@ impl ActionNode {
     }
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct SearchTreeMinimal {
+    index_to_node: HashMap<usize, ActionNode>,
+    node_to_children: HashMap<usize, Vec<usize>>,
+    node_to_parent: HashMap<usize, usize>,
+    repo_name: String,
+}
+
 #[derive(Serialize)]
 pub struct SearchTree {
     #[serde(serialize_with = "serialize_usize_map")]
@@ -402,6 +410,37 @@ impl SearchTree {
             agent_settings,
         }
     }
+
+    pub fn from_minimal_tree(
+        search_tree_minimal: SearchTreeMinimal,
+        selector: Selector,
+        llm_client: Arc<LLMBroker>,
+        tool_box: Arc<ToolBox>,
+    ) -> Self {
+        Self {
+            agent_settings: AgentSettings::new(true, true),
+            index_to_node: search_tree_minimal.index_to_node,
+            node_to_children: search_tree_minimal.node_to_children,
+            node_to_parent: search_tree_minimal.node_to_parent,
+            max_expansions: 1,
+            root_node_index: 0,
+            max_depth: 40,
+            max_iterations: 500,
+            max_finished_nodes: None,
+            reward_threshold: None,
+            min_finished_nodes: None,
+            max_search_try: None,
+            selector,
+            tools: vec![],
+            root_directory: "".to_owned(),
+            repo_name: search_tree_minimal.repo_name,
+            repo_base_commit_hash: "".to_owned(),
+            log_directory: "".to_owned(),
+            llm_client,
+            tool_box,
+        }
+    }
+
     pub fn root(&self) -> Option<&ActionNode> {
         self.index_to_node.get(&self.root_node_index)
     }
@@ -577,6 +616,47 @@ impl SearchTree {
                     .collect()
             })
             .unwrap_or_default()
+    }
+
+    pub fn check_if_tree_has_branching(&self) -> bool {
+        // easiest way to check is if any node has multiple children
+        // every node should have 0 or 1 child
+        self.node_to_children
+            .iter()
+            .any(|(_, children)| children.len() > 1)
+    }
+
+    pub fn calculate_tree_reward(&self) -> f32 {
+        let mut current_index = self.root_node_index;
+        let mut rewards: Vec<f32> = vec![];
+        let mut node = self.index_to_node.get(&current_index);
+        while node.is_some() {
+            let expected_node = node.expect("is_some to hold");
+            rewards.push(if expected_node.visits > 0 {
+                expected_node.reward_value / (expected_node.visits as f32)
+            } else {
+                0.0
+            });
+
+            let mut children = self
+                .children(expected_node)
+                .map(|children| children.into_iter().collect::<Vec<_>>())
+                .unwrap_or_default();
+            if children.is_empty() {
+                node = None;
+            } else {
+                // grab the first child
+                node = Some(children.remove(0));
+            }
+        }
+
+        if rewards.is_empty() {
+            0.0
+        } else {
+            let rewards_len = rewards.len();
+            let rewards_sum: f32 = rewards.into_iter().sum();
+            rewards_sum / (rewards_len as f32)
+        }
     }
 
     /// Creates the mean reward on the trajectory over here by traversing the tree
@@ -1496,7 +1576,7 @@ impl SearchTree {
                     println!("\n--- Traj: {}, Iteration {} ---", traj_counter, iteration);
 
                     // Add tree visualization after each iteration
-                    self.print_tree();
+                    // self.print_tree();
 
                     // change as necessary
                     self.save_serialised_graph(
@@ -1581,7 +1661,7 @@ impl SearchTree {
         println!("=== Search Complete ===\n");
 
         // Print final tree state
-        self.print_tree();
+        // self.print_tree();
 
         // save the tree again at the very end when everything has been updated
         self.save_serialised_graph(&self.log_directory, &message_properties.root_request_id())
@@ -1623,12 +1703,65 @@ impl SearchTree {
         }
     }
 
-    fn print_tree(&self) {
-        println!("MCTS Tree");
-        self.print_node(self.root_node_index, "", true);
+    pub fn print_midwit_tree(&self, current_index: usize, steps: &mut Vec<String>) {
+        // print it recursively to the same buffer?
+        let node = self.get_node(current_index);
+        if let None = node {
+            return;
+        }
+        let expected_node = node.expect("if let None to hold");
+        let node_information = format!(
+            "## Action Taken:
+{:?}
+
+## Observation:
+{:?}
+
+## Reward:
+{:?}",
+            expected_node
+                .action()
+                .map(|action| format!("{:?}", action))
+                .unwrap_or("Errored when getting action".to_owned()),
+            expected_node
+                .observation()
+                .map(|observation| format!("{:?}", observation))
+                .unwrap_or("Observation errored out".to_owned()),
+            expected_node
+                .reward()
+                .map(|reward| format!("{:?}", reward))
+                .unwrap_or("Reward not found".to_owned())
+        );
+        steps.push(node_information);
+        let child = self.children(expected_node);
+        let children_vec = child
+            .map(|children| children.into_iter().collect::<Vec<_>>())
+            .unwrap_or_default();
+        if children_vec.is_empty() {
+            return;
+        }
+        self.print_midwit_tree(
+            children_vec
+                .get(0)
+                .expect("is_empty to check for this")
+                .index,
+            steps,
+        )
     }
 
-    fn print_node(&self, node_index: usize, prefix: &str, is_last: bool) {
+    pub fn print_tree(&self, tree_output: &mut Vec<String>) {
+        println!("MCTS Tree");
+        tree_output.push("MCTS Tree".to_owned());
+        self.print_node(self.root_node_index, "", true, tree_output);
+    }
+
+    fn print_node(
+        &self,
+        node_index: usize,
+        prefix: &str,
+        is_last: bool,
+        tree_output: &mut Vec<String>,
+    ) {
         let node = match self.get_node(node_index) {
             Some(n) => n,
             None => return,
@@ -1707,9 +1840,11 @@ impl SearchTree {
 
         // Construct state_info
         let state_info = if !state_params.is_empty() {
-            format!("Node {} ({})", node_index, state_params.join(", "))
+            format!("Node ({})", state_params.join(", "))
+            // format!("Node {} ({})", node_index, state_params.join(", "))
         } else {
-            format!("Node {} ()", node_index)
+            format!("Node ()")
+            // format!("Node {} ()", node_index)
         };
 
         // Construct node_str based on reward
@@ -1731,13 +1866,17 @@ impl SearchTree {
 
         // Print the current node
         if node.is_duplicate {
+            tree_output.push(format!(
+                "{}{}{} {} (dup)",
+                prefix, branch, node_str, state_info
+            ));
             println!(
                 "{}",
                 format!("{}{}{} {} (dup)", prefix, branch, node_str, state_info).bright_red()
             );
         } else {
-            println!(
-                "{}{}{} {} (ex: {}, vi: {}, re: {})",
+            tree_output.push(format!(
+                "{}{}{} {} (ex: {}, re: {})",
                 prefix,
                 branch,
                 node_str,
@@ -1745,7 +1884,17 @@ impl SearchTree {
                 self.children_indices(node)
                     .map(|child| child.len())
                     .unwrap_or_default(),
-                node.visits,
+                reward_str,
+            ));
+            println!(
+                "{}{}{} {} (ex: {}, re: {})",
+                prefix,
+                branch,
+                node_str,
+                state_info,
+                self.children_indices(node)
+                    .map(|child| child.len())
+                    .unwrap_or_default(),
                 reward_str,
             );
         }
@@ -1765,7 +1914,7 @@ impl SearchTree {
         // Recursively print each child node
         for (i, child_index) in children.iter().enumerate() {
             let is_last_child = i == child_count - 1;
-            self.print_node(*child_index, &new_prefix, is_last_child);
+            self.print_node(*child_index, &new_prefix, is_last_child, tree_output);
         }
     }
 
