@@ -155,6 +155,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tools = vec![
         // if we are in json mode then select the code editor tool
         ToolType::CodeEditorTool,
+        ToolType::SearchFileContentWithRegex,
+        ToolType::ListFiles,
         ToolType::AttemptCompletion,
         ToolType::TerminalCommand,
     ];
