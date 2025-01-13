@@ -1417,7 +1417,7 @@ impl TSLanguageConfig {
     // TODO: get_tags cache
 
     // get tags for a given file
-    pub async fn get_tags(
+    pub fn get_tags(
         &self,
         fname: &PathBuf,
         rel_fname: &PathBuf,
