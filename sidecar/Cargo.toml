@@ -107,3 +107,6 @@ blake3 = "1.4.0"
 phf_codegen = "0.11.2"
 serde = {version = "1.0.188", features = ["derive"]}
 serde_yaml = "0.9.25"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }

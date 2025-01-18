@@ -696,8 +696,7 @@ impl Exchange {
 <query>
 {query}
 </query>"#
-                        );
-                        query
+                        )
                     }
                     ExchangeEditInformation::Anchored(anchored_edit) => {
                         let fs_file_path = anchored_edit.fs_file_path.to_owned();
