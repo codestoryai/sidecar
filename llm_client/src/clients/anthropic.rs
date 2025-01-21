@@ -456,7 +456,10 @@ impl AnthropicClient {
                 e
             })?;
 
-        let mut event_source = response_stream.bytes_stream().eventsource();
+        let mut event_source = response_stream
+            .error_for_status()?
+            .bytes_stream()
+            .eventsource();
 
         // let event_next = event_source.next().await;
         // dbg!(&event_next);
@@ -720,7 +723,10 @@ impl LLMClient for AnthropicClient {
                 e
             })?;
 
-        let mut event_source = response_stream.bytes_stream().eventsource();
+        let mut event_source = response_stream
+            .error_for_status()?
+            .bytes_stream()
+            .eventsource();
 
         let mut input_tokens = 0;
         let mut output_tokens = 0;
@@ -837,6 +843,7 @@ impl LLMClient for AnthropicClient {
             .json(&anthropic_request)
             .send()
             .await?
+            .error_for_status()?
             .bytes_stream()
             .eventsource();
 
