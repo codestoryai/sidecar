@@ -26,7 +26,7 @@ pub enum SymbolError {
     #[error("Unable to read file contents")]
     UnableToReadFileContent,
 
-    #[error("channel recieve error: {0}")]
+    #[error("channel receive error: {0}")]
     RecvError(RecvError),
 
     #[error("No definition found: {0}")]
