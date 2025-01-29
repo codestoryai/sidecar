@@ -92,6 +92,10 @@ struct CliArgs {
     /// Model name override
     #[arg(long)]
     model_name: Option<String>,
+
+    /// Maximum number of steps to run in the agent loop
+    #[arg(long)]
+    num_steps: Option<usize>,
 }
 
 /// Define the SWEbenchInstance struct for serialization
@@ -214,6 +218,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(args.repo_name.clone()),
             message_properties,
             false, // not in devtools context
+            args.num_steps, // steps parameter
         )
         .await;
     println!("agent::tool_use::end");

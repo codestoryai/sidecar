@@ -549,6 +549,7 @@ impl SessionService {
         repo_name: Option<String>,
         message_properties: SymbolEventMessageProperties,
         is_devtools_context: bool,
+        steps: Option<usize>,
     ) -> Result<(), SymbolError> {
         println!("session_service::tool_use_agentic::start");
         let mut session =
@@ -729,6 +730,7 @@ impl SessionService {
                         root_directory.clone(),
                         exchange_id.clone(),
                         message_properties.clone(),
+                        steps,
                     )
                     .await;
 
@@ -746,6 +748,7 @@ impl SessionService {
                 root_directory,
                 exchange_id,
                 message_properties,
+                steps,
             )
             .await
         }
@@ -762,10 +765,19 @@ impl SessionService {
         root_directory: String,
         parent_exchange_id: String,
         mut message_properties: SymbolEventMessageProperties,
+        steps: Option<usize>,
     ) -> Result<(), SymbolError> {
         let mut previous_failure = false;
         loop {
             println!("tool_use_agentic::looping_again");
+            
+            // Check if we've exceeded the maximum number of steps
+            if let Some(max_steps) = steps {
+                if session.action_nodes().len() >= max_steps {
+                    println!("session_service::tool_use_agentic::reached_max_steps");
+                    break;
+                }
+            }
             let _ = self
                 .save_to_storage(&session, mcts_log_directory.clone())
                 .await;

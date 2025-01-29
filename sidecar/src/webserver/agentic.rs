@@ -1598,6 +1598,7 @@ pub async fn agent_tool_use(
                         None,
                         message_properties,
                         false, // not in devtools context
+                        None,  // steps parameter
                     )
                     .await
             })

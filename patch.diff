@@ -1,0 +1,196 @@
+From e1ef2c4c32c73e5637562eb3d05c20602210edf7 Mon Sep 17 00:00:00 2001
+From: codestory <agent@codestory.com>
+Date: Wed, 29 Jan 2025 14:50:48 +0000
+Subject: [PATCH 1/3] feat: add step limiting functionality to agent loop
+
+This patch introduces the ability to limit the number of steps in the agent's
+execution loop. This feature is useful for:
+1. Testing and debugging agent behavior
+2. Preventing infinite loops
+3. Controlling resource usage in production environments
+
+The implementation adds an optional 'steps' parameter throughout the call chain
+from API endpoints down to the agent loop implementation.
+
+---
+ sidecar/src/agentic/tool/session/service.rs | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/sidecar/src/agentic/tool/session/service.rs b/sidecar/src/agentic/tool/session/service.rs
+index 6823c2d9..b7fb375d 100644
+--- a/sidecar/src/agentic/tool/session/service.rs
++++ b/sidecar/src/agentic/tool/session/service.rs
+@@ -549,6 +549,7 @@ impl SessionService {
+         repo_name: Option<String>,
+         message_properties: SymbolEventMessageProperties,
+         is_devtools_context: bool,
++        steps: Option<usize>, // New parameter to limit the number of steps in the agent loop
+     ) -> Result<(), SymbolError> {
+         println!("session_service::tool_use_agentic::start");
+         let mut session =
+@@ -730,6 +731,7 @@ impl SessionService {
+                         root_directory.clone(),
+                         exchange_id.clone(),
+                         message_properties.clone(),
++                        steps, // Pass the steps limit to the agent loop
+                     )
+                     .await;
+ 
+@@ -748,6 +750,7 @@ impl SessionService {
+                 root_directory,
+                 exchange_id,
+                 message_properties,
++                steps, // Pass the steps limit to the agent loop when not in reasoning mode
+             )
+             .await
+         }
+@@ -762,10 +765,19 @@ impl SessionService {
+         root_directory: String,
+         parent_exchange_id: String,
+         mut message_properties: SymbolEventMessageProperties,
++        steps: Option<usize>, // Parameter to limit the maximum number of steps in the loop
+     ) -> Result<(), SymbolError> {
+         let mut previous_failure = false;
+         loop {
+             println!("tool_use_agentic::looping_again");
++            
++            // Check if we've exceeded the maximum number of steps
++            // This provides a way to limit the number of iterations in the agent loop
++            // which can be useful for testing, debugging, or controlling resource usage
+             if let Some(max_steps) = steps {
++                // Compare current number of action nodes against the maximum allowed
+                 if session.action_nodes().len() >= max_steps {
++                    // Log that we've reached the maximum steps and exit the loop
++                    // This prevents the agent from running indefinitely
+                     println!("session_service::tool_use_agentic::reached_max_steps");
+                     break;
+                 }
+             }
+             let _ = self
+
+From 4389702762dc2ae33e1f04d5abce66d04d242cdd Mon Sep 17 00:00:00 2001
+From: codestory <agent@codestory.com>
+Date: Wed, 29 Jan 2025 14:55:46 +0000
+Subject: [PATCH 2/3] feat: propagate step parameter through entry points
+
+This patch propagates the step limiting functionality to all agent entry
+points in the application:
+1. Regular agent binary
+2. Reasoning agent binary
+3. Web server endpoints
+
+Each entry point passes 'None' as the default, meaning no step limit
+will be applied unless explicitly configured.
+
+---
+ sidecar/src/bin/agent_bin.rs           | 1 +
+ sidecar/src/bin/agent_bin_reasoning.rs | 1 +
+ sidecar/src/webserver/agentic.rs       | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/sidecar/src/bin/agent_bin.rs b/sidecar/src/bin/agent_bin.rs
+index e084bb6d..a7c8c01f 100644
+--- a/sidecar/src/bin/agent_bin.rs
++++ b/sidecar/src/bin/agent_bin.rs
+@@ -211,6 +211,7 @@ Your thinking should be thorough and so it's fine if it's very long."#,
+             Some(args.repo_name.clone()),
+             message_properties,
+             false, // not in devtools context
++            None,  // steps parameter - No step limit for regular agent execution
+         )
+         .await;
+     println!("agent::tool_use::end");
+diff --git a/sidecar/src/bin/agent_bin_reasoning.rs b/sidecar/src/bin/agent_bin_reasoning.rs
+index 48756131..f5a27571 100644
+--- a/sidecar/src/bin/agent_bin_reasoning.rs
++++ b/sidecar/src/bin/agent_bin_reasoning.rs
+@@ -214,6 +214,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
+             Some(args.repo_name.clone()),
+             message_properties,
+             false, // not in devtools context
++            None,  // steps parameter - No step limit for reasoning agent
+         )
+         .await;
+     println!("agent::tool_use::end");
+diff --git a/sidecar/src/webserver/agentic.rs b/sidecar/src/webserver/agentic.rs
+index 594dfe2e..0de10c42 100644
+--- a/sidecar/src/webserver/agentic.rs
++++ b/sidecar/src/webserver/agentic.rs
+@@ -1598,6 +1598,7 @@ pub async fn agent_tool_use(
+                         None,
+                         message_properties,
+                         false, // not in devtools context
++                        None,  // steps parameter - No step limit for web requests
+                     )
+                     .await
+             })
+
+From a6f75b341c7e0abb581b649842ed1d7345462715 Mon Sep 17 00:00:00 2001
+From: codestory <agent@codestory.com>
+Date: Wed, 29 Jan 2025 15:00:09 +0000
+Subject: [PATCH 3/3] feat: add CLI parameter for step limiting
+
+This patch adds a new CLI parameter 'num_steps' to both the regular and
+reasoning agent binaries. This allows users to specify a maximum number
+of steps for the agent loop directly from the command line.
+
+Benefits:
+1. Gives users control over agent execution length
+2. Helps with debugging and testing
+3. Prevents runaway processes in production
+
+The parameter is optional, defaulting to unlimited steps when not specified.
+
+---
+ sidecar/src/bin/agent_bin.rs           | 6 +++++-
+ sidecar/src/bin/agent_bin_reasoning.rs | 6 +++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/sidecar/src/bin/agent_bin.rs b/sidecar/src/bin/agent_bin.rs
+index a7c8c01f..be198df5 100644
+--- a/sidecar/src/bin/agent_bin.rs
++++ b/sidecar/src/bin/agent_bin.rs
+@@ -92,6 +92,10 @@ struct CliArgs {
+     /// Model name override
+     #[arg(long)]
+     model_name: Option<String>,
++
++    /// Maximum number of steps to run in the agent loop
++    #[arg(long)]
++    num_steps: Option<usize>, // New CLI parameter to limit the number of agent steps
+ }
+ 
+ /// Define the SWEbenchInstance struct for serialization
+@@ -211,7 +215,7 @@ Your thinking should be thorough and so it's fine if it's very long."#,
+             Some(args.repo_name.clone()),
+             message_properties,
+             false, // not in devtools context
+-            None,  // steps parameter
++            args.num_steps, // Pass the user-specified step limit to the agent
+         )
+         .await;
+     println!("agent::tool_use::end");
+diff --git a/sidecar/src/bin/agent_bin_reasoning.rs b/sidecar/src/bin/agent_bin_reasoning.rs
+index f5a27571..a0f96b02 100644
+--- a/sidecar/src/bin/agent_bin_reasoning.rs
++++ b/sidecar/src/bin/agent_bin_reasoning.rs
+@@ -92,6 +92,10 @@ struct CliArgs {
+     /// Model name override
+     #[arg(long)]
+     model_name: Option<String>,
++
++    /// Maximum number of steps to run in the agent loop
++    #[arg(long)]
++    num_steps: Option<usize>, // New CLI parameter to limit steps in reasoning agent
+ }
+ 
+ /// Define the SWEbenchInstance struct for serialization
+@@ -214,7 +218,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
+             Some(args.repo_name.clone()),
+             message_properties,
+             false, // not in devtools context
+-            None,  // steps parameter
++            args.num_steps, // Pass the user-specified step limit to the reasoning agent
+         )
+         .await;
+     println!("agent::tool_use::end");
