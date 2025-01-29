@@ -418,7 +418,7 @@ impl SessionService {
             root_directory.to_owned(),
             std::env::consts::OS.to_owned(),
             shell.to_owned(),
-            ToolUseAgentProperties::new(false, Some(repo_name), None),
+            ToolUseAgentProperties::new(false, Some(repo_name), None, false),
         );
 
         session = session
@@ -611,7 +611,7 @@ impl SessionService {
             // we should ideally get this information from the vscode-server side setting
             std::env::consts::OS.to_owned(),
             shell.to_owned(),
-            ToolUseAgentProperties::new(running_in_editor, repo_name, aide_rules),
+            ToolUseAgentProperties::new(running_in_editor, repo_name, aide_rules, is_devtools_context),
         );
 
         session = session

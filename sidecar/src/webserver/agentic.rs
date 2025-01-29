@@ -1597,6 +1597,7 @@ pub async fn agent_tool_use(
                         mcts_log_directory,
                         None,
                         message_properties,
+                        true, // is_devtools_context: true when running in the editor
                     )
                     .await
             })

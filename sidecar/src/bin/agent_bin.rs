@@ -210,6 +210,7 @@ Your thinking should be thorough and so it's fine if it's very long."#,
             Some(args.log_directory.clone()),
             Some(args.repo_name.clone()),
             message_properties,
+            false, // is_devtools_context: false when running in agent farm
         )
         .await;
     println!("agent::tool_use::end");
