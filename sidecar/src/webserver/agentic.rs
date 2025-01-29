@@ -989,6 +989,8 @@ pub struct AgentSessionChatRequest {
     reasoning: bool,
     #[serde(default)]
     semantic_search: bool,
+    #[serde(default)]
+    is_devtools_context: bool,
 }
 
 /// Handles the agent session and either creates it or appends to it
@@ -1015,6 +1017,7 @@ pub async fn agent_session_chat(
         aide_rules,
         reasoning: _reasoning,
         semantic_search: _semantic_search,
+        is_devtools_context: _is_devtools_context,
     }): Json<AgentSessionChatRequest>,
 ) -> Result<impl IntoResponse> {
     let llm_provider = model_configuration
@@ -1155,6 +1158,7 @@ pub async fn agent_session_edit_anchored(
         aide_rules,
         reasoning: _reasoning,
         semantic_search: _semantic_search,
+        is_devtools_context: _is_devtools_context,
     }): Json<AgentSessionChatRequest>,
 ) -> Result<impl IntoResponse> {
     let llm_provider = model_configuration
@@ -1304,6 +1308,7 @@ pub async fn agent_session_edit_agentic(
         aide_rules,
         reasoning: _reasoning,
         semantic_search: _semantic_search,
+        is_devtools_context: _is_devtools_context,
     }): Json<AgentSessionChatRequest>,
 ) -> Result<impl IntoResponse> {
     let llm_provider = model_configuration
@@ -1533,6 +1538,7 @@ pub async fn agent_tool_use(
         // TODO(skcd): use the reasoning here to force the agentic llm to behave better
         reasoning: _reasoning,
         semantic_search,
+        is_devtools_context,
     }): Json<AgentSessionChatRequest>,
 ) -> Result<impl IntoResponse> {
     // disable reasoning
@@ -1597,7 +1603,7 @@ pub async fn agent_tool_use(
                         mcts_log_directory,
                         None,
                         message_properties,
-                        false, // not in devtools context
+                        is_devtools_context,
                     )
                     .await
             })
@@ -1682,6 +1688,7 @@ pub async fn agent_session_plan_iterate(
         aide_rules,
         reasoning: _reasoning,
         semantic_search: _semantic_search,
+        is_devtools_context,
     }): Json<AgentSessionChatRequest>,
 ) -> Result<impl IntoResponse> {
     let llm_provider = model_configuration
@@ -1831,6 +1838,7 @@ pub async fn agent_session_plan(
         aide_rules,
         reasoning: _reasoning,
         semantic_search: _semantic_search,
+        ..
     }): Json<AgentSessionChatRequest>,
 ) -> Result<impl IntoResponse> {
     let llm_provider = model_configuration
