@@ -258,14 +258,16 @@ pub struct ToolUseAgentProperties {
     _in_editor: bool,
     repo_name: Option<String>,
     aide_rules: Option<String>,
+    is_devtools_context: bool,
 }
 
 impl ToolUseAgentProperties {
-    pub fn new(in_editor: bool, repo_name: Option<String>, aide_rules: Option<String>) -> Self {
+    pub fn new(in_editor: bool, repo_name: Option<String>, aide_rules: Option<String>, is_devtools_context: bool) -> Self {
         Self {
             _in_editor: in_editor,
             repo_name,
             aide_rules,
+            is_devtools_context,
         }
     }
 }

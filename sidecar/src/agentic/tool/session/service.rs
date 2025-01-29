@@ -418,7 +418,7 @@ impl SessionService {
             root_directory.to_owned(),
             std::env::consts::OS.to_owned(),
             shell.to_owned(),
-            ToolUseAgentProperties::new(false, Some(repo_name), None),
+            ToolUseAgentProperties::new(false, Some(repo_name), None, false),
         );
 
         session = session
@@ -603,6 +603,7 @@ impl SessionService {
                 .collect(),
             );
 
+        // TODO: Modify system prompt based on is_devtools_context when implementing that feature
         let tool_agent = ToolUseAgent::new(
             llm_broker.clone(),
             root_directory.to_owned(),
@@ -611,7 +612,7 @@ impl SessionService {
             // we should ideally get this information from the vscode-server side setting
             std::env::consts::OS.to_owned(),
             shell.to_owned(),
-            ToolUseAgentProperties::new(running_in_editor, repo_name, aide_rules),
+            ToolUseAgentProperties::new(running_in_editor, repo_name, aide_rules, false),
         );
 
         session = session
