@@ -75,6 +75,7 @@ use super::{
     swe_bench::test_tool::SWEBenchTestTool,
     terminal::terminal::TerminalTool,
     test_runner::runner::TestRunner,
+    wait::WaitTool,
 };
 
 pub struct ToolBrokerConfiguration {
@@ -487,6 +488,7 @@ impl ToolBroker {
             Box::new(SemanticSearch::new(llm_client)),
         );
         tools.insert(ToolType::FindFiles, Box::new(FindFilesClient::new()));
+        tools.insert(ToolType::Wait, Box::new(WaitTool::new()));
         tools.insert(
             ToolType::RequestScreenshot,
             Box::new(RequestScreenshot::new()),

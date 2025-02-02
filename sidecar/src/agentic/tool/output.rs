@@ -234,6 +234,7 @@ pub enum ToolOutput {
     FindFiles(FindFilesResponse),
     // Request screenshot output
     RequestScreenshot(RequestScreenshotOutput),
+    Wait,
 }
 
 impl ToolOutput {

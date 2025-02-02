@@ -1,3 +1,14 @@
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct WaitRequest {
+    pub duration_ms: u64,
+}
+
+impl WaitRequest {
+    pub fn new(duration_ms: u64) -> Self {
+        Self { duration_ms }
+    }
+}
+
 use super::{
     code_edit::{
         code_editor::CodeEditorParameters,
@@ -201,6 +212,9 @@ impl ToolInputPartial {
             ToolType::TestRunner => Some(TestRunnerRequestPartial::to_json()),
             ToolType::CodeEditorTool => Some(CodeEditorParameters::to_json()),
             ToolType::RequestScreenshot => Some(RequestScreenshotInputPartial::to_json()),
+            ToolType::Wait => Some(serde_json::json!({
+                "duration_ms": 1000 // default value
+            })),
             _ => None,
         }
     }
@@ -332,6 +346,7 @@ pub enum ToolInput {
     SemanticSearch(SemanticSearchRequest),
     // Find files input
     FindFiles(FindFilesRequest),
+    Wait(WaitRequest), 
     // Request screenshot input
     RequestScreenshot(RequestScreenshotInput),
 }
@@ -424,6 +439,7 @@ impl ToolInput {
             ToolInput::RewardGeneration(_) => ToolType::RewardGeneration,
             ToolInput::FeedbackGeneration(_) => ToolType::FeedbackGeneration,
             ToolInput::FindFiles(_) => ToolType::FindFiles,
+            ToolInput::Wait(_) => ToolType::Wait,
             ToolInput::RequestScreenshot(_) => ToolType::RequestScreenshot,
         }
     }
@@ -1175,6 +1191,14 @@ impl ToolInput {
             Ok(terminal_command)
         } else {
             Err(ToolError::WrongToolInput(ToolType::TerminalCommand))
+        }
+    }
+
+    pub fn is_wait(self) -> Result<WaitRequest, ToolError> {
+        if let ToolInput::Wait(request) = self {
+            Ok(request)
+        } else {
+            Err(ToolError::WrongToolInput(ToolType::Wait))
         }
     }
 
