@@ -1,3 +1,4 @@
+use crate::agentic::tool::plan::wait::WaitInputPartial;
 use super::{
     code_edit::{
         code_editor::CodeEditorParameters,
@@ -102,6 +103,7 @@ pub enum ToolInputPartial {
     Reasoning(ToolUseAgentReasoningParamsPartial),
     FindFile(FindFileInputPartial),
     RequestScreenshot(RequestScreenshotInputPartial),
+    Wait(WaitInputPartial),
 }
 
 impl ToolInputPartial {
@@ -122,6 +124,7 @@ impl ToolInputPartial {
             Self::Reasoning(_) => ToolType::Reasoning,
             Self::FindFile(_) => ToolType::FindFiles,
             Self::RequestScreenshot(_) => ToolType::RequestScreenshot,
+            Self::Wait(_) => ToolType::Wait,
         }
     }
 
@@ -148,6 +151,7 @@ impl ToolInputPartial {
             Self::Reasoning(tool_use_reasoning) => tool_use_reasoning.to_string(),
             Self::FindFile(find_file_partial_input) => find_file_partial_input.to_string(),
             Self::RequestScreenshot(request_screenshot) => request_screenshot.to_string(),
+            Self::Wait(wait_input) => format!("Wait tool with repo_ref: {:?}", wait_input.repo_ref),
         }
     }
 
@@ -184,6 +188,7 @@ impl ToolInputPartial {
             Self::RequestScreenshot(request_screenshot) => {
                 serde_json::to_value(request_screenshot).ok()
             }
+            Self::Wait(wait_input) => serde_json::to_value(&wait_input).ok(),
         }
     }
 
@@ -201,6 +206,7 @@ impl ToolInputPartial {
             ToolType::TestRunner => Some(TestRunnerRequestPartial::to_json()),
             ToolType::CodeEditorTool => Some(CodeEditorParameters::to_json()),
             ToolType::RequestScreenshot => Some(RequestScreenshotInputPartial::to_json()),
+            ToolType::Wait => None,
             _ => None,
         }
     }

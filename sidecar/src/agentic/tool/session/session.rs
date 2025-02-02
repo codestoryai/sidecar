@@ -2949,6 +2949,20 @@ reason: {}"#,
                     exchange_id.to_owned(),
                 );
             }
+            ToolInputPartial::Wait(wait_input) => {
+                // Simply record the wait operation
+                if let Some(action_node) = self.action_nodes.last_mut() {
+                    action_node.add_observation_mut(format!("Wait operation executed with repo_ref: {:?}", wait_input.repo_ref));
+                }
+
+                self = self.tool_output(
+                    &exchange_id,
+                    tool_type.clone(),
+                    format!("Wait operation completed"),
+                    UserContext::default(),
+                    exchange_id.to_owned(),
+                );
+            }
         }
         Ok(self)
     }
