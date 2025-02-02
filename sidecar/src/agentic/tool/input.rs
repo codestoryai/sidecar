@@ -102,6 +102,7 @@ pub enum ToolInputPartial {
     Reasoning(ToolUseAgentReasoningParamsPartial),
     FindFile(FindFileInputPartial),
     RequestScreenshot(RequestScreenshotInputPartial),
+    Wait(String),
 }
 
 impl ToolInputPartial {
@@ -148,6 +149,7 @@ impl ToolInputPartial {
             Self::Reasoning(tool_use_reasoning) => tool_use_reasoning.to_string(),
             Self::FindFile(find_file_partial_input) => find_file_partial_input.to_string(),
             Self::RequestScreenshot(request_screenshot) => request_screenshot.to_string(),
+            Self::Wait(wait_message) => wait_message.clone(),
         }
     }
 
@@ -184,6 +186,7 @@ impl ToolInputPartial {
             Self::RequestScreenshot(request_screenshot) => {
                 serde_json::to_value(request_screenshot).ok()
             }
+            Self::Wait(wait_message) => serde_json::to_value(wait_message).ok(),
         }
     }
 

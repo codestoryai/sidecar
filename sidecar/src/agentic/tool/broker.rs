@@ -4,11 +4,14 @@ use std::{collections::HashMap, sync::Arc};
 use llm_client::broker::LLMBroker;
 
 use crate::{
-    agentic::symbol::identifier::LLMProperties, chunking::languages::TSLanguageParsing,
+    agentic::symbol::identifier::LLMProperties,
+    chunking::languages::TSLanguageParsing,
     inline_completion::symbols_tracker::SymbolTrackerInline,
 };
 
 use super::{
+    r#type::{Tool, ToolRewardScale, ToolType},
+    process_wait_tool,
     code_edit::{
         filter_edit::FilterEditOperationBroker, find::FindCodeSectionsToEdit,
         models::broker::CodeEditBroker, search_and_replace::SearchAndReplaceEditing,
@@ -60,9 +63,7 @@ use super::{
     plan::{
         add_steps::PlanAddStepClient, generator::StepGeneratorClient, reasoning::ReasoningClient,
         updater::PlanUpdaterClient,
-    },
-    r#type::{Tool, ToolRewardScale, ToolType},
-    ref_filter::ref_filter::ReferenceFilterBroker,
+    },    ref_filter::ref_filter::ReferenceFilterBroker,
     repo_map::generator::RepoMapGeneratorClient,
     rerank::base::ReRankBroker,
     reward::client::RewardClientGenerator,
@@ -88,6 +89,45 @@ impl ToolBrokerConfiguration {
             editor_agent,
             apply_edits_directly,
         }
+    }
+}
+
+struct WaitTool;
+
+impl WaitTool {
+    fn new() -> Self {
+        WaitTool
+    }
+}
+
+#[async_trait]
+impl Tool for WaitTool {
+    async fn invoke(&self, input: ToolInput) -> Result<ToolOutput, ToolError> {
+        process_wait_tool(input.into())
+    }
+
+    fn tool_description(&self) -> String {
+        "Tool for handling wait operations".to_owned()
+    }
+
+    fn tool_input_format(&self) -> String {
+        "Wait tool expects a message string".to_owned()
+    }
+
+    fn get_evaluation_criteria(&self, _trajectory_length: usize) -> Vec<String> {
+        vec![]
+    }
+
+    fn get_reward_scale(&self, _trajectory_length: usize) -> Vec<ToolRewardScale> {
+        vec![]
+    }
+}
+
+fn process_wait_tool(input: ToolInputPartial) -> Result<ToolOutput, ToolError> {
+    if let ToolInputPartial::Wait(msg) = input {
+        Ok(ToolOutput::Message(format!("Wait tool processed: {}", msg)))
+    } else {
+        Err(ToolError::WrongToolInput(ToolType::Wait))
     }
 }
 
@@ -491,6 +531,7 @@ impl ToolBroker {
             ToolType::RequestScreenshot,
             Box::new(RequestScreenshot::new()),
         );
+        tools.insert(ToolType::Wait, Box::new(WaitTool::new()));
         // we also want to add the re-ranking tool here, so we invoke it freely
         Self { tools }
     }
@@ -532,11 +573,12 @@ impl Tool for ToolBroker {
     async fn invoke(&self, input: ToolInput) -> Result<ToolOutput, ToolError> {
         let tool_type = input.tool_type();
         if let Some(tool) = self.tools.get(&tool_type) {
-            let result = tool.invoke(input).await;
-            result
+            match tool_type {
+                ToolType::Wait => process_wait_tool(input.into()),
+                _ => tool.invoke(input).await
+            }
         } else {
-            let result = Err(ToolError::MissingTool);
-            result
+            Err(ToolError::MissingTool)
         }
     }
 

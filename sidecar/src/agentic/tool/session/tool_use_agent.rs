@@ -1193,6 +1193,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
                             SymbolError::ToolError(ToolError::SerdeConversionFailed)
                         })?,
                     ),
+                    "wait" => ToolInputPartial::Wait(tool_input),
                     _ => {
                         println!("unknow tool found: {}", tool_type);
                         return Err(SymbolError::WrongToolOutput);
