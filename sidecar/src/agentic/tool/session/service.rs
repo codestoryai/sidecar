@@ -1150,6 +1150,9 @@ impl SessionService {
                         ToolInputPartial::RequestScreenshot(_) => {
                             tool_type.to_string().bright_white().to_string()
                         }
+                        ToolInputPartial::Wait(_) => {
+                            "wait".to_string()
+                        }
                     };
                     state_params.push(tool_str);
                 }

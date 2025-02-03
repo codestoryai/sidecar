@@ -2949,6 +2949,22 @@ reason: {}"#,
                     exchange_id.to_owned(),
                 );
             }
+            ToolInputPartial::Wait(_) => {
+                // Handle wait tool input
+                let _ = message_properties.ui_sender().send(UIEventWithID::tool_output_delta_response(
+                    message_properties.root_request_id().to_owned(),
+                    message_properties.request_id_str().to_owned(),
+                    "".to_owned(),
+                    "Waiting...".to_owned(),
+                ));
+                self = self.tool_output(
+                    &exchange_id,
+                    tool_type.clone(),
+                    "Waiting...".to_owned(),
+                    UserContext::default(),
+                    exchange_id.to_owned(),
+                );
+            }
         }
         Ok(self)
     }

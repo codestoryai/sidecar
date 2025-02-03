@@ -771,6 +771,7 @@ Output:
                 }
             }
             ToolInputPartial::RequestScreenshot(_) => Err(InferenceError::WrongToolOutput),
+            ToolInputPartial::Wait(_) => Err(InferenceError::WrongToolOutput),
         }
     }
 }
