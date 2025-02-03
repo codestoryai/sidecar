@@ -771,6 +771,15 @@ Output:
                 }
             }
             ToolInputPartial::RequestScreenshot(_) => Err(InferenceError::WrongToolOutput),
+            ToolInputPartial::Wait => {
+                let message = "Waiting...".to_string();
+                Ok(ActionObservation::new(
+                    message.to_owned(),
+                    message,
+                    Some(tool_thinking),
+                    false,
+                ))
+            }
         }
     }
 }

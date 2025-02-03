@@ -86,6 +86,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "tool", content = "input")]
 pub enum ToolInputPartial {
     CodeEditing(CodeEditingPartialRequest),
     ListFiles(ListFilesInputPartial),
@@ -102,6 +103,7 @@ pub enum ToolInputPartial {
     Reasoning(ToolUseAgentReasoningParamsPartial),
     FindFile(FindFileInputPartial),
     RequestScreenshot(RequestScreenshotInputPartial),
+    Wait,
 }
 
 impl ToolInputPartial {
@@ -122,6 +124,7 @@ impl ToolInputPartial {
             Self::Reasoning(_) => ToolType::Reasoning,
             Self::FindFile(_) => ToolType::FindFiles,
             Self::RequestScreenshot(_) => ToolType::RequestScreenshot,
+            Self::Wait => ToolType::Wait,
         }
     }
 
@@ -139,15 +142,12 @@ impl ToolInputPartial {
             Self::AttemptCompletion(attempt_completion) => attempt_completion.to_string(),
             Self::RepoMapGeneration(repo_map_generator) => repo_map_generator.to_string(),
             Self::TestRunner(test_runner_partial_output) => test_runner_partial_output.to_string(),
-            Self::CodeEditorParameters(code_editor_parameters) => {
-                code_editor_parameters.to_string()
-            }
-            Self::SemanticSearch(semantic_search_parameters) => {
-                semantic_search_parameters.to_string()
-            }
+            Self::CodeEditorParameters(code_editor_parameters) => code_editor_parameters.to_string(),
+            Self::SemanticSearch(semantic_search_parameters) => semantic_search_parameters.to_string(),
             Self::Reasoning(tool_use_reasoning) => tool_use_reasoning.to_string(),
             Self::FindFile(find_file_partial_input) => find_file_partial_input.to_string(),
             Self::RequestScreenshot(request_screenshot) => request_screenshot.to_string(),
+            Self::Wait => "Wait".to_string(),
         }
     }
 
@@ -184,6 +184,7 @@ impl ToolInputPartial {
             Self::RequestScreenshot(request_screenshot) => {
                 serde_json::to_value(request_screenshot).ok()
             }
+            Self::Wait => Some(serde_json::json!({})),
         }
     }
 
@@ -201,6 +202,7 @@ impl ToolInputPartial {
             ToolType::TestRunner => Some(TestRunnerRequestPartial::to_json()),
             ToolType::CodeEditorTool => Some(CodeEditorParameters::to_json()),
             ToolType::RequestScreenshot => Some(RequestScreenshotInputPartial::to_json()),
+            ToolType::Wait => Some(serde_json::json!({})),
             _ => None,
         }
     }

@@ -1977,6 +1977,9 @@ impl SearchTree {
                         ToolInputPartial::RequestScreenshot(_) => {
                             tool_type.to_string().bright_white().to_string()
                         }
+                        ToolInputPartial::Wait => {
+                            tool_type.to_string().bright_white().to_string()
+                        }
                     };
                     state_params.push(tool_str);
                 }

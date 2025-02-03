@@ -444,6 +444,11 @@ impl SessionService {
                 } else {
                     vec![]
                 })
+                .chain(if reasoning {
+                    vec![ToolType::Wait]
+                } else {
+                    vec![]
+                })
                 .collect(),
             );
 
@@ -1148,6 +1153,9 @@ impl SessionService {
                             tool_type.to_string().bright_blue().to_string()
                         }
                         ToolInputPartial::RequestScreenshot(_) => {
+                            tool_type.to_string().bright_white().to_string()
+                        }
+                        ToolInputPartial::Wait => {
                             tool_type.to_string().bright_white().to_string()
                         }
                     };

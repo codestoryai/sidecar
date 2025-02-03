@@ -154,6 +154,8 @@ pub enum ToolType {
     CodeEditorTool,
     // Find files using a find equivalent command
     FindFiles,
+    // Wait for a specified duration
+    Wait,
     // Request browser screenshot for web applications
     RequestScreenshot,
 }
@@ -258,6 +260,7 @@ impl std::fmt::Display for ToolType {
             ToolType::CodeEditorTool => write!(f, "str_replace_editor"),
             ToolType::SemanticSearch => write!(f, "semantic_search"),
             ToolType::FindFiles => write!(f, "find_file"),
+            ToolType::Wait => write!(f, "wait"),
             ToolType::RequestScreenshot => write!(f, "request_screenshot"),
         }
     }

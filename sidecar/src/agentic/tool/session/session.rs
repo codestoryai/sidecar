@@ -2949,6 +2949,21 @@ reason: {}"#,
                     exchange_id.to_owned(),
                 );
             }
+            ToolInputPartial::Wait => {
+                // we have the tool output over here
+                if let Some(action_node) = self.action_nodes.last_mut() {
+                    action_node.add_observation_mut("Waiting...".to_owned());
+                    action_node.set_time_taken_seconds(tool_use_time_taken.elapsed().as_secs_f32());
+                }
+
+                self = self.tool_output(
+                    &exchange_id,
+                    tool_type.clone(),
+                    "Waiting...".to_owned(),
+                    UserContext::default(),
+                    exchange_id.to_owned(),
+                );
+            }
         }
         Ok(self)
     }
