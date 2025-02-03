@@ -74,6 +74,7 @@ use super::{
     },
     swe_bench::test_tool::SWEBenchTestTool,
     terminal::terminal::TerminalTool,
+    wait::wait::Wait,
     test_runner::runner::TestRunner,
 };
 
@@ -491,6 +492,7 @@ impl ToolBroker {
             ToolType::RequestScreenshot,
             Box::new(RequestScreenshot::new()),
         );
+        tools.insert(ToolType::Wait, Box::new(Wait::new()));
         // we also want to add the re-ranking tool here, so we invoke it freely
         Self { tools }
     }

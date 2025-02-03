@@ -121,6 +121,7 @@ impl ToolInputPartial {
             Self::SemanticSearch(_) => ToolType::SemanticSearch,
             Self::Reasoning(_) => ToolType::Reasoning,
             Self::FindFile(_) => ToolType::FindFiles,
+            Self::Wait => ToolType::Wait,
             Self::RequestScreenshot(_) => ToolType::RequestScreenshot,
         }
     }
@@ -334,6 +335,8 @@ pub enum ToolInput {
     FindFiles(FindFilesRequest),
     // Request screenshot input
     RequestScreenshot(RequestScreenshotInput),
+    // Wait request
+    Wait(WaitRequest),
 }
 
 impl ToolInput {
@@ -424,6 +427,7 @@ impl ToolInput {
             ToolInput::RewardGeneration(_) => ToolType::RewardGeneration,
             ToolInput::FeedbackGeneration(_) => ToolType::FeedbackGeneration,
             ToolInput::FindFiles(_) => ToolType::FindFiles,
+            ToolInput::Wait(_) => ToolType::Wait,
             ToolInput::RequestScreenshot(_) => ToolType::RequestScreenshot,
         }
     }
@@ -1175,6 +1179,14 @@ impl ToolInput {
             Ok(terminal_command)
         } else {
             Err(ToolError::WrongToolInput(ToolType::TerminalCommand))
+        }
+    }
+
+    pub fn is_wait(self) -> Result<WaitRequest, ToolError> {
+        if let ToolInput::Wait(request) = self {
+            Ok(request)
+        } else {
+            Err(ToolError::WrongToolInput(ToolType::Wait))
         }
     }
 

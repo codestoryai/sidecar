@@ -258,6 +258,7 @@ impl std::fmt::Display for ToolType {
             ToolType::CodeEditorTool => write!(f, "str_replace_editor"),
             ToolType::SemanticSearch => write!(f, "semantic_search"),
             ToolType::FindFiles => write!(f, "find_file"),
+            ToolType::Wait => write!(f, "Wait..."),
             ToolType::RequestScreenshot => write!(f, "request_screenshot"),
         }
     }
