@@ -444,6 +444,11 @@ impl SessionService {
                 } else {
                     vec![]
                 })
+                .chain(if reasoning {
+                    vec![ToolType::Wait]
+                } else {
+                    vec![]
+                })
                 .collect(),
             );
 

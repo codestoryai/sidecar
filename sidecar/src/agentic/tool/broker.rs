@@ -491,6 +491,36 @@ impl ToolBroker {
             ToolType::RequestScreenshot,
             Box::new(RequestScreenshot::new()),
         );
+
+        struct WaitTool;
+        #[async_trait]
+        impl Tool for WaitTool {
+            async fn invoke(&self, _input: ToolInput) -> Result<ToolOutput, ToolError> {
+                println!("Wait tool invoked (stub behavior)");
+                Ok(ToolOutput::default())
+            }
+
+            fn tool_description(&self) -> String {
+                "Wait tool - stub implementation".to_owned()
+            }
+
+            fn tool_input_format(&self) -> String {
+                "Wait tool format - stub implementation".to_owned()
+            }
+
+            fn get_evaluation_criteria(&self, _trajectory_length: usize) -> Vec<String> {
+                vec![]
+            }
+
+            fn get_reward_scale(&self, _trajectory_length: usize) -> Vec<ToolRewardScale> {
+                vec![]
+            }
+        }
+
+        tools.insert(
+            ToolType::Wait,
+            Box::new(WaitTool),
+        );
         // we also want to add the re-ranking tool here, so we invoke it freely
         Self { tools }
     }

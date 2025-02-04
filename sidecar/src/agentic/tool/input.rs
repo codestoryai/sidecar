@@ -122,6 +122,7 @@ impl ToolInputPartial {
             Self::Reasoning(_) => ToolType::Reasoning,
             Self::FindFile(_) => ToolType::FindFiles,
             Self::RequestScreenshot(_) => ToolType::RequestScreenshot,
+            Self::Wait => ToolType::Wait,
         }
     }
 
