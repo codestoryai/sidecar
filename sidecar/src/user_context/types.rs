@@ -116,7 +116,11 @@ impl ImageInformation {
             // Re-encode as base64
             let result = BASE64.encode(compressed);
 
-            Ok(Self::new(self.r#type.clone(), self.media_type.clone(), result))
+            Ok(Self::new(
+                self.r#type.clone(),
+                self.media_type.clone(),
+                result,
+            ))
         }
 
         #[cfg(not(feature = "image_compression"))]
@@ -452,7 +456,9 @@ pub struct UserContext {
     is_plan_drop_from: Option<usize>,
 }
 
-fn compress_images_on_deserialize<'de, D>(deserializer: D) -> Result<Vec<ImageInformation>, D::Error>
+fn compress_images_on_deserialize<'de, D>(
+    deserializer: D,
+) -> Result<Vec<ImageInformation>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -968,8 +974,10 @@ mod tests {
             // Verify image was compressed
             assert!(!user_context.images.is_empty());
             let compressed_image = &user_context.images[0];
-            assert!(compressed_image.data().len() <= test_image.len(), 
-                   "Image should be compressed or unchanged, but was larger");
+            assert!(
+                compressed_image.data().len() <= test_image.len(),
+                "Image should be compressed or unchanged, but was larger"
+            );
         }
     }
 }
