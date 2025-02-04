@@ -56,7 +56,7 @@ use crate::{
 use super::{
     chat::{
         SessionChatClientRequest, SessionChatMessage, SessionChatMessageImage,
-        SessionChatToolReturn, SessionChatToolUse,
+        SessionChatToolReturn, SessionChatToolUse, SessionChatRole,
     },
     hot_streak::SessionHotStreakRequest,
     tool_use_agent::{
@@ -795,6 +795,56 @@ impl Session {
         self.action_nodes.as_slice()
     }
 
+    /// Compresses older messages and prioritizes keeping more recent context.
+    /// This helps prevent the context window from growing too large.
+    fn decay_messages(&self, _exchanges: &[Exchange], mut messages: Vec<SessionChatMessage>) -> Vec<SessionChatMessage> {
+        const MAX_UNCOMPRESSED_EXCHANGES: usize = 15; // Keep last 15 exchanges uncompressed
+        
+        // If we have fewer messages than our threshold, return them all
+        if messages.len() <= MAX_UNCOMPRESSED_EXCHANGES {
+            return messages;
+        }
+        
+        // Split messages into segments that we'll handle differently
+        let recent_messages = messages.split_off(messages.len() - MAX_UNCOMPRESSED_EXCHANGES);
+        let mut older_messages = messages;
+        
+        // Process older messages to compress context
+        older_messages.retain(|msg| {
+            // Keep human messages as they're important for context
+            if matches!(msg.role(), SessionChatRole::User) {
+                return true;
+            }
+            
+            // Keep successful edits and plans
+            if matches!(msg.role(), SessionChatRole::Assistant) {
+                let content = msg.message().to_lowercase();
+                if (content.contains("edits made") && !content.contains("rejected")) || 
+                   (content.contains("plan below") && content.contains("user was happy")) {
+                    return true;
+                }
+            }
+            
+            // Drop tool outputs and rejected changes
+            if msg.message().starts_with("Observation") || 
+               msg.message().to_lowercase().contains("rejected") {
+                return false;
+            }
+            
+            // Keep tool use/return for recent context
+            if !msg.tool_use().is_empty() || !msg.tool_return().is_empty() {
+                return true;
+            }
+            
+            // By default, keep important context
+            true
+        });
+        
+        // Append recent messages which we keep in full
+        older_messages.extend(recent_messages);
+        older_messages
+    }
+
     pub fn reset_exchanges(&mut self) {
         self.exchanges = vec![];
     }
@@ -1232,7 +1282,8 @@ impl Session {
 
         // decay the content of the messages depending on the decay condition
         // so we can keep the context smaller and more relevant
-        // converted_messages = self.decay_messages(self.exchanges.as_slice(), converted_messages);
+        // Decay messages to keep context size manageable
+        converted_messages = self.decay_messages(self.exchanges.as_slice(), converted_messages);
 
         // grab the terminal output if anything is present and pass it as part of the
         // agent input
