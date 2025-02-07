@@ -18,6 +18,7 @@ use crate::reranking::snippet_reranking::rerank_snippets;
 use super::model_selection::LLMClientConfig;
 use super::types::{ApiResponse, Result};
 
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct EditFileRequest {
     pub file_path: String,
