@@ -80,7 +80,8 @@ impl LLMBroker {
                 LLMProvider::GoogleAIStudio,
                 Box::new(GoogleAIStdioClient::new()),
             )
-            .add_provider(LLMProvider::Groq, Box::new(GroqClient::new())))
+            .add_provider(LLMProvider::Groq, Box::new(GroqClient::new()))
+            .add_provider(LLMProvider::Deepseek, Box::new(OpenAICompatibleClient::new())))
     }
 
     pub fn add_provider(
@@ -160,6 +161,7 @@ impl LLMBroker {
             LLMProviderAPIKeys::GoogleAIStudio(_) => LLMProvider::GoogleAIStudio,
             LLMProviderAPIKeys::OpenRouter(_) => LLMProvider::OpenRouter,
             LLMProviderAPIKeys::GroqProvider(_) => LLMProvider::Groq,
+            LLMProviderAPIKeys::Deepseek(_) => LLMProvider::Deepseek,
         };
         let provider = self.providers.get(&provider_type);
         if let Some(provider) = provider {
@@ -406,6 +408,7 @@ impl LLMBroker {
             LLMProviderAPIKeys::GoogleAIStudio(_) => LLMProvider::GoogleAIStudio,
             LLMProviderAPIKeys::OpenRouter(_) => LLMProvider::OpenRouter,
             LLMProviderAPIKeys::GroqProvider(_) => LLMProvider::Groq,
+            LLMProviderAPIKeys::Deepseek(_) => LLMProvider::Deepseek,
         };
         let provider = self.providers.get(&provider_type);
         if let Some(provider) = provider {

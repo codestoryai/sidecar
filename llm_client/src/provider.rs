@@ -40,6 +40,7 @@ pub enum LLMProvider {
     GoogleAIStudio,
     OpenRouter,
     Groq,
+    Deepseek,
 }
 
 impl std::fmt::Display for LLMProvider {
@@ -58,6 +59,7 @@ impl std::fmt::Display for LLMProvider {
             LLMProvider::GoogleAIStudio => write!(f, "GoogleAIStudio"),
             LLMProvider::OpenRouter => write!(f, "OpenRouter"),
             LLMProvider::Groq => write!(f, "Groq"),
+            LLMProvider::Deepseek => write!(f, "Deepseek"),
         }
     }
 }
@@ -87,6 +89,7 @@ pub enum LLMProviderAPIKeys {
     GoogleAIStudio(GoogleAIStudioKey),
     OpenRouter(OpenRouterAPIKey),
     GroqProvider(GroqProviderAPIKey),
+    Deepseek(DeepseekConfig),
 }
 
 impl LLMProviderAPIKeys {
@@ -119,6 +122,7 @@ impl LLMProviderAPIKeys {
             LLMProviderAPIKeys::GoogleAIStudio(_) => LLMProvider::GoogleAIStudio,
             LLMProviderAPIKeys::OpenRouter(_) => LLMProvider::OpenRouter,
             LLMProviderAPIKeys::GroqProvider(_) => LLMProvider::Groq,
+            LLMProviderAPIKeys::Deepseek(_) => LLMProvider::Deepseek,
         }
     }
 
@@ -227,6 +231,13 @@ impl LLMProviderAPIKeys {
             LLMProvider::Groq => {
                 if let LLMProviderAPIKeys::GroqProvider(groq_api_key) = self {
                     Some(LLMProviderAPIKeys::GroqProvider(groq_api_key.clone()))
+                } else {
+                    None
+                }
+            }
+            LLMProvider::Deepseek => {
+                if let LLMProviderAPIKeys::Deepseek(deepseek_config) = self {
+                    Some(LLMProviderAPIKeys::Deepseek(deepseek_config.clone()))
                 } else {
                     None
                 }
@@ -374,6 +385,21 @@ impl LMStudioConfig {
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct CodeStoryConfig {
     pub llm_type: LLMType,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct DeepseekConfig {
+    pub api_key: String,
+    pub api_base: String,
+}
+
+impl DeepseekConfig {
+    pub fn new(api_key: String) -> Self {
+        Self {
+            api_key,
+            api_base: "https://api.deepseek.com/v1".to_owned(),
+        }
+    }
 }
 
 #[cfg(test)]
