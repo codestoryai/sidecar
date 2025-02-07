@@ -18,9 +18,9 @@ pub fn tracing_subscribe(config: &Configuration) -> bool {
     _ = LOGGER_GUARD.set(guard);
     let log_writer_layer = fmt::layer().with_writer(non_blocking).with_ansi(false);
 
-    #[cfg(all(tokio_unstable, feature = "debug"))]
+    #[cfg(all(tokio_unstable, debug_assertions))]
     let console_subscriber_layer = Some(console_subscriber::spawn());
-    #[cfg(not(all(tokio_unstable, feature = "debug")))]
+    #[cfg(not(all(tokio_unstable, debug_assertions)))]
     let console_subscriber_layer: Option<Box<dyn tracing_subscriber::Layer<_> + Send + Sync>> =
         None;
 
