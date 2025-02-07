@@ -1,0 +1,42 @@
+{
+  "index_to_node": {
+    "0": {
+      "index": 0,
+      "action": null,
+      "feedback": null,
+      "is_duplicate": false,
+      "reward": null,
+      "visits": 0,
+      "value": 0.0,
+      "max_expansions": 1,
+      "time_taken_seconds": null,
+      "llm_usage_statistics": null,
+      "observation": {
+        "message": "Test message",
+        "summary": "Test summary",
+        "thinking": "Test thinking",
+        "terminal": false,
+        "expect_correction": false
+      },
+      "user_context": {
+        "symbols": [],
+        "variables": [],
+        "file_content_map": [],
+        "folder_paths": [],
+        "terminal_selection": null,
+        "images": [],
+        "is_plan_generation": false,
+        "is_plan_execution_until": null,
+        "is_plan_append": false,
+        "is_plan_drop_from": null
+      },
+      "message": "Sample problem statement",
+      "reward_value": 0.0
+    }
+  },
+  "node_to_children": {},
+  "node_to_parent": {},
+  "repo_name": "test_repo",
+  "root_directory": "/tmp/test",
+  "log_directory": "/tmp/test/logs"
+}

@@ -1038,7 +1038,7 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
             .llm_client
             .stream_completion(
                 llm_client::provider::LLMProviderAPIKeys::OpenAI(OpenAIProvider::new(
-                    std::env::var("OPENAI_API_KEY").expect("env var to be present"),
+                    std::env::var("OPENAI_API_KEY").unwrap_or_else(|_| "sk-dummy-test-key".to_string()),
                 )),
                 request,
                 llm_client::provider::LLMProvider::OpenAI,
