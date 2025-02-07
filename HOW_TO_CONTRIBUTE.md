@@ -11,7 +11,7 @@ After cloning and building the repo, check out the [issues list](https://github.
 
 ## Your own ideas
 We encourage you to poke around the codebase, find flaws and ways to improve it. The prompts and responses are also logged locally in your machine so you should be able to very quickly triage things.
-If you want a new feature or want to change something, please reach out to us on [discrod](https://discord.gg/mtgrhXM5Xf) or create an issue on the repo.
+If you want a new feature or want to change something, please reach out to us on [discord](https://discord.gg/mtgrhXM5Xf) or create an issue on the repo.
 
 ## Debugging
 The best way to debug is cowboy style, put print statments and check if your code is hitting the right branch and doing the right things.
