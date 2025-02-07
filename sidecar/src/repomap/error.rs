@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tokio::task::JoinError;
 
 use super::file::errors::FileError;
 
@@ -18,6 +19,9 @@ pub enum RepoMapError {
 
     #[error("Tree generation error: {0}")]
     TreeGenerationError(String),
+
+    #[error("Task failed: {0}")]
+    TaskFailed(JoinError),
 
     #[error("From FS helper error: {0}")]
     FileSystemError(#[from] FileError),
