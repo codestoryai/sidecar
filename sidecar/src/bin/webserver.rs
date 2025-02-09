@@ -241,6 +241,10 @@ fn agentic_router() -> Router {
             post(sidecar::webserver::agentic::verify_model_config),
         )
         .route(
+            "/mcts_data",
+            post(sidecar::webserver::agentic::get_mcts_data),
+        )
+        .route(
             "/cancel_running_event",
             post(sidecar::webserver::agentic::cancel_running_exchange),
         )

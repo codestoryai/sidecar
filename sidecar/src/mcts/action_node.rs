@@ -487,6 +487,36 @@ impl SearchTreeMinimal {
             ),
         }
     }
+
+    /// Returns a reference to the node at the given index
+    pub fn get_node(&self, index: usize) -> Option<&ActionNode> {
+        self.index_to_node.get(&index)
+    }
+
+    /// Returns the indices of children for a given node index
+    pub fn get_children_indices(&self, index: usize) -> Option<&Vec<usize>> {
+        self.node_to_children.get(&index)
+    }
+
+    /// Returns the parent index for a given node index
+    pub fn get_parent_index(&self, index: usize) -> Option<&usize> {
+        self.node_to_parent.get(&index)
+    }
+
+    /// Returns all node indices in the tree
+    pub fn get_all_node_indices(&self) -> Vec<usize> {
+        self.index_to_node.keys().cloned().collect()
+    }
+
+    /// Returns the root node index (always 0)
+    pub fn get_root_index(&self) -> usize {
+        0
+    }
+
+    /// Returns true if the node at the given index exists
+    pub fn has_node(&self, index: usize) -> bool {
+        self.index_to_node.contains_key(&index)
+    }
 }
 
 #[derive(Serialize, Clone)]
