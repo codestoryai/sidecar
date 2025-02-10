@@ -34,7 +34,7 @@ use crate::{
                 list_files::ListFilesInputPartial, open_file::OpenFileRequestPartial,
                 search_file::SearchFileContentInputPartial,
             },
-            mcp::input::McpToolPartial,
+            mcp::{input::McpToolPartial, discover_resources, format_resource_info},
             r#type::ToolType,
             repo_map::generator::RepoMapGeneratorRequestPartial,
             session::chat::SessionChatRole,
@@ -863,6 +863,9 @@ Your final output must strictly adhere to the following format:
         } else {
             "".to_owned()
         };
+
+        let resource_info = "No resources available.".to_string();
+
         let aide_rules = match self.properties.aide_rules.clone() {
             Some(aide_rules) => {
                 format!(
@@ -889,6 +892,12 @@ SYSTEM INFORMATION
 Operating System: {operating_system}
 Default Shell: {default_shell}
 Current Working Directory: {working_directory}
+
+====
+
+AVAILABLE RESOURCES
+
+{resource_info}
 
 ====
 {aide_rules}
@@ -971,6 +980,14 @@ CAPABILITIES
 - To further explore directories such as outside the current working directory, you can use the list_files tool. If you pass 'true' for the recursive parameter, it will list files recursively. Otherwise, it will list files at the top level, which is better suited for generic directories where you don't necessarily need the nested structure, like the Desktop.
 - You can use search_files to perform regex searches across files in a specified directory, outputting context-rich results that include surrounding lines. This is particularly useful for understanding code patterns, finding specific implementations, or identifying areas that need refactoring.
 - You can use the execute_command tool to run commands on the user's computer whenever you feel it can help accomplish the user's task. When you need to execute a CLI command, you must provide a clear explanation of what the command does. Prefer to execute complex CLI commands over creating executable scripts, since they are more flexible and easier to run. Interactive and long-running commands are allowed, since the commands are run in the user's VSCode terminal. The user may keep commands running in the background and you will be kept updated on their status along the way. Each command you execute is run in a new terminal instance.
+- MCP tools can expose resources that provide data and content for LLM interactions. Resources are identified by URIs and can contain either text or binary data. You can:
+  - List available resources using tool.list_resources()
+  - List resource templates using tool.list_resource_templates()
+  - Read resource contents using tool.read_resource(uri)
+  - Subscribe to resource updates using tool.subscribe_resource(uri)
+  - Unsubscribe from updates using tool.unsubscribe_resource(uri)
+  Resources can include file contents, database records, API responses, live system data, screenshots, log files, and more.
+
 
 ====
 
