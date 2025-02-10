@@ -20,10 +20,7 @@ use crate::agentic::tool::r#type::Tool;
 use crate::chunking::editor_parsing::EditorParsing;
 use crate::chunking::languages::TSLanguageParsing;
 use crate::user_context::types::UserContext;
-use crate::{
-    agentic::tool::{broker::ToolBroker, output::ToolOutput},
-    inline_completion::symbols_tracker::SymbolTrackerInline,
-};
+use crate::agentic::tool::{broker::ToolBroker, output::ToolOutput};
 
 use super::events::message_event::{SymbolEventMessage, SymbolEventMessageProperties};
 use super::identifier::LLMProperties;
@@ -72,14 +69,12 @@ pub struct SymbolManager {
 impl SymbolManager {
     pub fn new(
         tools: Arc<ToolBroker>,
-        symbol_broker: Arc<SymbolTrackerInline>,
         editor_parsing: Arc<EditorParsing>,
         llm_properties: LLMProperties,
     ) -> Self {
         let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<SymbolEventMessage>();
         let tool_box = Arc::new(ToolBox::new(
             tools.clone(),
-            symbol_broker.clone(),
             editor_parsing.clone(),
         ));
         let symbol_locker =
