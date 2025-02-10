@@ -1750,6 +1750,7 @@ pub async fn agent_tool_use(
                         Some(repo_name),
                         message_properties,
                         is_devtools_context,
+                        false, // default to false for force_completion_on_exceed
                     )
                     .await
             })

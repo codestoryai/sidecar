@@ -387,8 +387,20 @@ impl SessionService {
         repo_name: Option<String>,
         message_properties: SymbolEventMessageProperties,
         is_devtools_context: bool,
+        force_completion_on_exceed: bool,
     ) -> Result<(), SymbolError> {
         println!("session_service::tool_use_agentic::start");
+
+        // Add token count check
+        let input_token_count = user_message.split_whitespace().count() * 4; // Rough estimate
+        if input_token_count > 200_000 {
+            if force_completion_on_exceed {
+                println!("Token count exceeded 200k, forcing completion due to force_completion_on_exceed flag");
+                return Ok(());
+            } else {
+                todo!("Handle alternative flow when context window is exceeded");
+            }
+        }
         let mut session =
             if let Ok(session) = self.load_from_storage(storage_path.to_owned()).await {
                 println!(
