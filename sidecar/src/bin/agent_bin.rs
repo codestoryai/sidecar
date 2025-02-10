@@ -1,8 +1,19 @@
+//! Agent Binary Module
+//! 
+//! This binary is responsible for running AI agents in a farm-like setup.
+//! It processes input from git repositories and executes problem-solving
+//! workflows using configured LLM providers. The implementation focuses
+//! on simplicity and reliability.
+//!
+//! Key features:
+//! - Command-line interface for configuration
+//! - Integration with LLM providers (Anthropic, OpenRouter)
+//! - Session-based execution tracking
+//! - Configurable logging and monitoring
+//! - Support for different execution modes (JSON, midwit)
+
 use std::{path::PathBuf, sync::Arc};
 
-/// This contains the binary responsible for running the agents as a farm
-/// Dead simple where the inputs are the input to the git repository containing the input
-/// and the problem statement, keeping it super simple and limited
 use clap::Parser;
 use llm_client::{
     clients::types::LLMType,
@@ -18,6 +29,17 @@ use sidecar::{
     user_context::types::UserContext,
 };
 
+/// Creates and returns the session storage path for a given session ID.
+/// 
+/// This function ensures that the session storage directory exists and creates it if necessary.
+/// The path is constructed by joining the index directory with "session" and the provided session ID.
+///
+/// # Arguments
+/// * `config` - Application configuration containing the index directory
+/// * `session_id` - Unique identifier for the session
+///
+/// # Returns
+/// A string containing the absolute path to the session storage directory
 pub async fn check_session_storage_path(config: Arc<Configuration>, session_id: String) -> String {
     let mut session_path = config.index_dir.clone();
     session_path = session_path.join("session");
@@ -34,7 +56,8 @@ pub async fn check_session_storage_path(config: Arc<Configuration>, session_id: 
         .to_owned()
 }
 
-/// Define the command-line arguments
+/// Command-line argument structure for configuring the agent binary.
+/// Contains all necessary parameters for setting up and running the agent.
 #[derive(Parser, Debug)]
 #[command(
     author = "skcd",
@@ -42,83 +65,113 @@ pub async fn check_session_storage_path(config: Arc<Configuration>, session_id: 
     about = "Agent binary sidecar runner"
 )]
 struct CliArgs {
-    /// Git directory name
+    /// Maximum time in seconds for the agent to run
     #[arg(long)]
     timeout: usize,
 
-    /// Endpoint URL
+    /// URL endpoint for the editor service
     #[arg(long)]
     editor_url: String,
 
-    /// Timeout in seconds
+    /// Path to the input file containing problem configuration
     #[arg(long)]
     input: PathBuf,
 
-    /// Anthropic api key
+    /// API key for Anthropic services
     #[arg(long, default_value = None)]
     anthropic_api_key: String,
 
-    /// OPen Router api key
+    /// API key for OpenRouter services (optional)
     #[arg(long, default_value = None)]
     openrouter_api_key: Option<String>,
 
-    /// The run id for the current run
+    /// Unique identifier for the current execution run
     #[arg(long)]
     run_id: String,
 
+    /// Name of the repository being processed
     #[arg(long)]
     repo_name: String,
 
-    /// Directory to dump all the logs into
+    /// Directory path for storing execution logs
     #[arg(long)]
     log_directory: String,
 
-    /// Use json mode strictly
+    /// Enable strict JSON mode for communication
     #[arg(long, default_value = "true")]
     json_mode: bool,
 
-    /// Use midwit mode (aka sonnet3.5 with tool)
+    /// Enable midwit mode (sonnet3.5 with tool)
     #[arg(long, default_value = "true")]
     midwit_mode: bool,
 
-    /// Run in single trajectory but a lot of them
+    /// Number of trajectories for single trajectory search mode
     #[arg(long, default_value = None)]
     single_traj_search: Option<usize>,
 
-    /// Maximum depth for the search tree
+    /// Maximum depth limit for the search tree
     #[arg(long, default_value = "30")]
     max_depth: u32,
 
-    /// Model name override
+    /// Override for the default LLM model name
     #[arg(long)]
     model_name: Option<String>,
 }
 
-/// Define the SWEbenchInstance struct for serialization
+/// Represents a benchmark instance for software engineering tasks.
+/// Contains all necessary information about a repository, problem statement,
+/// and test configurations.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct SWEbenchInstance {
+    /// Repository URL or identifier
     repo: String,
+    /// Unique identifier for this benchmark instance
     instance_id: String,
+    /// Base commit hash to start from
     base_commit: String,
+    /// Patch to be applied
     patch: String,
+    /// Test patch to be applied
     test_patch: String,
+    /// Description of the problem to be solved
     problem_statement: String,
+    /// Additional hints for solving the problem
     hints_text: String,
+    /// Creation timestamp
     created_at: String,
+    /// Version identifier
     version: String,
+    /// Tests that should transition from failing to passing
     #[serde(rename = "FAIL_TO_PASS")]
     fail_to_pass: String,
+    /// Tests that should remain passing
     #[serde(rename = "PASS_TO_PASS")]
     pass_to_pass: String,
+    /// Commit hash for environment setup
     environment_setup_commit: String,
 }
 
+/// Input structure for the agent binary that combines git directory information
+/// with a benchmark instance.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct InputParts {
+    /// The directory name containing the git repository
     git_drname: String,
+    /// The benchmark instance to be processed
     instance: SWEbenchInstance,
 }
-
+/// Main entry point for the agent binary.
+/// 
+/// Orchestrates the complete agent execution workflow:
+/// 1. Parses and validates command line arguments
+/// 2. Configures application settings and logging infrastructure
+/// 3. Sets up LLM provider connections and messaging channels
+/// 4. Initializes session storage and services
+/// 5. Processes input configuration and problem statement
+/// 6. Executes the agent with specified parameters
+/// 
+/// # Returns
+/// Returns a Result indicating success or containing an error if execution failed
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("agent::start");
