@@ -6,7 +6,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::routing::get;
 use axum::Extension;
 use clap::Parser;
-use sidecar::application::{application::Application, config::configuration::Configuration};
+use sidecar::application::{application::Application, config::configuration::{Configuration, Tools}};
 use std::net::SocketAddr;
 use tokio::signal;
 use tokio::sync::oneshot;
@@ -25,6 +25,22 @@ pub type Router<S = Application> = axum::Router<S>;
 async fn main() -> Result<()> {
     info!("CodeStory 🚀");
     let configuration = Configuration::parse();
+
+    // Handle tools subcommand
+    if let Some(tools_cmd) = configuration.tools {
+        match tools_cmd {
+            Tools::List => {
+                println!("Available tools:");
+                println!("  - list_files: List files in a directory");
+                println!("  - search_files: Search for patterns in files");
+                println!("  - read_file: Read content from a file");
+                println!("  - code_edit: Edit or create files");
+                println!("  - execute_command: Run shell commands");
+                println!("  - repo_map: Generate repository map");
+                return Ok(());
+            }
+        }
+    }
 
     // We get the logging setup first
     debug!("installing logging to local file");
