@@ -8,6 +8,8 @@ use std::{
 
 use futures::StreamExt;
 use llm_client::clients::types::LLMType;
+use rand::random;
+use tempfile::NamedTempFile;
 use tokio::io::AsyncWriteExt;
 
 use crate::{
@@ -3110,37 +3112,34 @@ reason: {}"#,
         Ok(self)
     }
 
-    /// Helper for atomic file operations
+    /// Helper for atomic file operations using tempfile crate
     pub async fn atomic_file_operation(
         storage_path: &str,
         content: String,
     ) -> Result<(), SymbolError> {
-        // Create a temporary file path by appending .tmp to the original path
-        let temp_path = format!("{}.tmp", storage_path);
+        // Create a named temporary file in the same directory as the target
+        let dir = std::path::Path::new(storage_path)
+            .parent()
+            .ok_or_else(|| SymbolError::IOError(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Invalid storage path",
+            )))?;
+            
+        let mut temp_file = NamedTempFile::new_in(dir)
+            .map_err(|e| SymbolError::IOError(e))?;
 
-        // Write to temporary file first
-        let mut temp_file = tokio::fs::File::create(&temp_path)
+        // Write content to the temporary file
+        tokio::fs::write(temp_file.path(), content.as_bytes())
             .await
             .map_err(|e| SymbolError::IOError(e))?;
 
+        // Persist the temporary file by atomically renaming it
         temp_file
-            .write_all(content.as_bytes())
-            .await
-            .map_err(|e| SymbolError::IOError(e))?;
-
-        // Ensure all data is written to disk
-        temp_file
-            .sync_all()
-            .await
-            .map_err(|e| SymbolError::IOError(e))?;
-
-        // Close the file explicitly before renaming
-        drop(temp_file);
-
-        // Atomically rename temp file to target file
-        tokio::fs::rename(&temp_path, storage_path)
-            .await
-            .map_err(|e| SymbolError::IOError(e))?;
+            .persist(storage_path)
+            .map_err(|e| SymbolError::IOError(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to persist file: {}", e),
+            )))?;
 
         Ok(())
     }
