@@ -45,6 +45,7 @@ impl OpenAICompatibleClient {
             LLMType::Gpt4_32k => Some("gpt-4-32k-0613".to_owned()),
             LLMType::DeepSeekCoder33BInstruct => Some("deepseek-coder-33b".to_owned()),
             LLMType::DeepSeekCoder6BInstruct => Some("deepseek-coder-6b".to_owned()),
+            LLMType::DeepSeekR1 => Some("deepseek-r1".to_owned()),
             LLMType::CodeLlama13BInstruct => Some("codellama-13b".to_owned()),
             LLMType::Llama3_1_8bInstruct => Some("llama-3.1-8b-instant".to_owned()),
             LLMType::Llama3_1_70bInstruct => Some("llama-3.1-70b-versatile".to_owned()),
@@ -121,6 +122,12 @@ impl OpenAICompatibleClient {
                     .with_api_base(openai_compatible.api_base);
                 Ok(OpenAIClientType::OpenAIClient(Client::with_config(config)))
             }
+            LLMProviderAPIKeys::Deepseek(deepseek_config) => {
+                let config = OpenAIConfig::new()
+                    .with_api_key(deepseek_config.api_key)
+                    .with_api_base(deepseek_config.api_base);
+                Ok(OpenAIClientType::OpenAIClient(Client::with_config(config)))
+            }
             _ => Err(LLMClientError::WrongAPIKeyType),
         }
     }
@@ -135,6 +142,12 @@ impl OpenAICompatibleClient {
                 let config = OpenAIConfig::new()
                     .with_api_key(openai_compatible.api_key)
                     .with_api_base(openai_compatible.api_base);
+                Ok(Client::with_config(config))
+            }
+            LLMProviderAPIKeys::Deepseek(deepseek_config) => {
+                let config = OpenAIConfig::new()
+                    .with_api_key(deepseek_config.api_key)
+                    .with_api_base(deepseek_config.api_base);
                 Ok(Client::with_config(config))
             }
             _ => Err(LLMClientError::WrongAPIKeyType),
