@@ -492,6 +492,10 @@ impl ToolBroker {
             ToolType::RequestScreenshot,
             Box::new(RequestScreenshot::new()),
         );
+        tools.insert(
+            ToolType::OverwriteFile,
+            Box::new(FileOverwrite::new()),
+        );
 
         let mut mcp_tools = Vec::new();
 

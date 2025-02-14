@@ -265,6 +265,7 @@ impl std::fmt::Display for ToolType {
             ToolType::RequestScreenshot => write!(f, "request_screenshot"),
             ToolType::ContextCrunching => write!(f, "context_crunching"),
             ToolType::McpTool(name) => write!(f, "{}", name),
+            ToolType::OverwriteFile => write!(f, "overwrite_file"),
         }
     }
 }
