@@ -6,7 +6,6 @@ pub mod db;
 pub mod file_analyser;
 pub mod git;
 pub mod in_line_agent;
-pub mod inline_completion;
 pub mod mcts;
 pub mod repo;
 pub mod repomap;
