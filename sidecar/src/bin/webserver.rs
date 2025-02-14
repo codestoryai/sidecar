@@ -6,6 +6,8 @@ use axum::extract::DefaultBodyLimit;
 use axum::routing::get;
 use axum::Extension;
 use clap::Parser;
+#[cfg(feature = "grpc")]
+use sidecar::grpc::AgentFarmGrpcServer;
 use sidecar::application::{application::Application, config::configuration::Configuration};
 use std::net::SocketAddr;
 use tokio::signal;
@@ -43,24 +45,57 @@ async fn main() -> Result<()> {
     });
 
     // We initialize the logging here
-    let application = Application::initialize(configuration).await?;
+    let application = Application::initialize(configuration.clone()).await?;
     println!("initialized application");
     debug!("initialized application");
 
-    // Main logic
-    tokio::select! {
-        // Start the webserver
-        _ = run(application) => {
-            // Your server logic
-        }
-        _ = rx => {
-            // Signal received, this block will be executed.
-            // Drop happens automatically when variables go out of scope.
-            debug!("Signal received, cleaning up...");
+    #[cfg(feature = "grpc")]
+    {
+        let grpc_port = configuration.port + 1;
+        let grpc_addr = SocketAddr::new(configuration.host.parse()?, grpc_port);
+        let grpc_app = application.clone();
+        let grpc_server = AgentFarmGrpcServer::new(grpc_app).serve(grpc_addr);
+        let http_server = run(application);
+
+        tokio::select! {
+            result = tokio::join!(http_server, grpc_server) => {
+                match result {
+                    (Ok(_), Ok(_)) => Ok(()),
+                    (Err(e), _) => {
+                        error!(?e, "HTTP server failed");
+                        Err(e)
+                    },
+                    (_, Err(e)) => {
+                        error!(?e, "gRPC server failed");
+                        Err(e.into())
+                    }
+                }
+            }
+            _ = rx => {
+                debug!("Signal received, cleaning up...");
+                Ok(())
+            }
         }
     }
 
-    Ok(())
+    #[cfg(not(feature = "grpc"))]
+    {
+        tokio::select! {
+            result = run(application) => {
+                match result {
+                    Ok(_) => Ok(()),
+                    Err(e) => {
+                        error!(?e, "HTTP server failed");
+                        Err(e)
+                    }
+                }
+            }
+            _ = rx => {
+                debug!("Signal received, cleaning up...");
+                Ok(())
+            }
+        }
+    }
 }
 
 pub async fn run(application: Application) -> Result<()> {
