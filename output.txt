@@ -1,0 +1,115 @@
+# Tool Calling Implementation Comparison
+
+## 1. System Message Differences
+
+### Agent Farm Approach
+- Uses JSON Schema format for tool definitions
+- Tools are defined in a more structured format with JSONSchema validation
+- System message focuses on function calling capabilities
+- Tools are presented as functions with parameters and return types
+
+### Our Implementation (ToolUseAgent)
+- Uses XML-style format for tool definitions
+- Tools are defined with example usage and descriptions
+- System message (src/agentic/tool/session/tool_use_agent.rs) includes:
+  - Comprehensive environment context (OS, shell, working directory)
+  - Detailed tool use guidelines
+  - Explicit rules about tool usage
+  - Thinking process requirements (<thinking> tags)
+  - Step-by-step execution requirements
+
+## 2. XML vs JSON Parsing
+
+### Agent Farm Approach
+- Uses JSON for tool input/output
+- Parameters are validated against JSONSchema
+- More rigid structure with strict type checking
+- Example:
+```json
+{
+  "name": "list_files",
+  "parameters": {
+    "directory": "/path/to/dir",
+    "recursive": true
+  }
+}
+```
+
+### Our Implementation
+- Uses XML-style tags for tool input/output
+- More flexible parsing with line-by-line processing
+- Supports multi-line content naturally
+- Example:
+```xml
+<list_files>
+<directory_path>
+/path/to/dir
+</directory_path>
+<recursive>
+true
+</recursive>
+</list_files>
+```
+
+## 3. Code Structure Differences
+
+### Key Files and Components
+
+1. Tool Definition (src/agentic/tool/type.rs):
+- Defines Tool trait with core methods:
+  - invoke(): Executes tool functionality
+  - tool_description(): Provides verbose description
+  - tool_input_format(): Provides XML format for input
+  - get_reward_scale(): Handles tool use rewards
+
+2. Tool Use Generator (src/agentic/tool/session/tool_use_agent.rs):
+- Handles XML parsing and tool execution
+- Manages tool state and parameters
+- Processes tool output
+- Key components:
+  - ToolUseGenerator: Parses XML input
+  - ToolBlockStatus: Tracks parsing state
+  - ToolBlockEvent: Manages tool events
+
+3. System Message Construction:
+- Comprehensive environment setup
+- Detailed tool usage guidelines
+- Explicit formatting requirements
+- Thinking process requirements
+
+## 4. Key Differences in Approach
+
+1. Parsing Strategy:
+- Agent Farm: JSON schema validation
+- Our Implementation: Line-by-line XML parsing with state machine
+
+2. Tool Execution:
+- Agent Farm: Direct function calls
+- Our Implementation: Async trait-based execution with comprehensive error handling
+
+3. Message Format:
+- Agent Farm: Structured JSON
+- Our Implementation: Human-readable XML with better support for multi-line content
+
+4. Error Handling:
+- Agent Farm: Schema validation errors
+- Our Implementation: Custom ToolError types with detailed error contexts
+
+5. State Management:
+- Agent Farm: Stateless function calls
+- Our Implementation: Stateful tool execution with progress tracking
+
+## 5. Links to Key Code
+
+1. Tool Definition:
+- src/agentic/tool/type.rs: Defines core Tool trait
+- src/agentic/tool/session/tool_use_agent.rs: Main tool use implementation
+
+2. System Message:
+- system_message() method in ToolUseAgent
+- system_message_for_o1() for orchestration
+- system_message_midwit_json_mode() for JSON mode
+
+3. Tool Use Generator:
+- ToolUseGenerator struct for parsing
+- process_answer() method for handling tool input
