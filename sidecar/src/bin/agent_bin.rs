@@ -150,7 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         LLMProviderAPIKeys::Anthropic(AnthropicAPIKey::new(args.anthropic_api_key.to_owned())),
     );
     // Define context crunching LLM properties - using the same model as the main agent for now
-    let _context_crunching_llm = Some(llm_provider.clone());
+    let context_crunching_llm = Some(llm_provider.clone());
     let cancellation_token = tokio_util::sync::CancellationToken::new();
     let (sender, _receiver) = tokio::sync::mpsc::unbounded_channel();
     let message_properties = SymbolEventMessageProperties::new(
@@ -213,7 +213,7 @@ Your thinking should be thorough and so it's fine if it's very long."#,
             Some(args.repo_name.clone()),
             message_properties,
             false, // not in devtools context
-            None, // No context crunching LLM for agent_bin
+            context_crunching_llm, // Pass the configured LLM for context crunching
         )
         .await;
     println!("agent::tool_use::end");
