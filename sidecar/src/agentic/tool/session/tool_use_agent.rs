@@ -1454,6 +1454,32 @@ You accomplish a given task iteratively, breaking it down into clear steps and w
         if llm_properties.llm() == &LLMType::ClaudeSonnet {
             println!("sonnet_failed::failing_back_to_gemini-2.0-flash");
             let gemini_pro_properties = llm_properties.clone().set_llm(LLMType::Gemini2_0Flash);
+            // Clone the values that would be moved
+            let cancellation_token_clone = cancellation_token.clone();
+            let root_request_id_clone = root_request_id.clone();
+            let ui_sender_clone = ui_sender.clone();
+            let final_messages_clone = final_messages.clone();
+            
+            if let Some(result) = self
+                .try_with_llm(
+                    gemini_pro_properties,
+                    cancellation_token_clone,
+                    root_request_id_clone,
+                    ui_sender_clone,
+                    exchange_id,
+                    final_messages_clone,
+                    None,
+                )
+                .await?
+            {
+                return Ok(result);
+            }
+        }
+
+        // If gemini-pro-1.5 failed, try with gemini-2.0-flash
+        if llm_properties.llm() == &LLMType::ClaudeSonnet {
+            println!("sonnet_failed::failing_back_to_gemini-2.0-flash");
+            let gemini_pro_properties = llm_properties.clone().set_llm(LLMType::Gemini2_0Flash);
             if let Some(result) = self
                 .try_with_llm(
                     gemini_pro_properties,
