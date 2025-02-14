@@ -2023,11 +2023,22 @@ impl SearchTree {
 
         // Construct state_info
         let state_info = if !state_params.is_empty() {
-            format!("Node ({})", state_params.join(", "))
-            // format!("Node {} ({})", node_index, state_params.join(", "))
+            let usage_info = if let Some(usage_stats) = &node.llm_usage_statistics {
+                format!(" [tokens in/out: {}/{}]", 
+                    usage_stats.input_tokens().unwrap_or(0),
+                    usage_stats.output_tokens().unwrap_or(0))
+            } else {
+                "".to_string()
+            };
+            format!("Node ({}){}",  state_params.join(", "), usage_info)
         } else {
-            format!("Node ()")
-            // format!("Node {} ()", node_index)
+            format!("Node (){}", if let Some(usage_stats) = &node.llm_usage_statistics {
+                format!(" [tokens in/out: {}/{}]", 
+                    usage_stats.input_tokens().unwrap_or(0),
+                    usage_stats.output_tokens().unwrap_or(0))
+            } else {
+                "".to_string()
+            })
         };
 
         // Construct node_str based on reward
