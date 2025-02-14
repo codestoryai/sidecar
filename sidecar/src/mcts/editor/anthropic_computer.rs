@@ -358,14 +358,15 @@ impl AnthropicCodeEditor {
 
     async fn write_file(&self, path: &Path, content: &str) -> Result<(), AnthropicEditorError> {
         if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await.map_err(|e| {
+            create_dir_all_with_retry(parent).await.map_err(|e| {
                 AnthropicEditorError::InputParametersMissing(format!(
                     "Error creating directories for {:?}: {}",
                     parent, e
                 ))
             })?;
         }
-        tokio::fs::write(path, content).await.map_err(|e| {
+
+        write_file_with_retry(path, content).await.map_err(|e| {
             AnthropicEditorError::InputParametersMissing(format!(
                 "Error writing file {:?}: {}",
                 path, e
