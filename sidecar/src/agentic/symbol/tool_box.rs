@@ -119,8 +119,22 @@ use crate::repomap::types::RepoMap;
 use crate::user_context::types::{UserContext, VariableInformation};
 use crate::{
     agentic::tool::{broker::ToolBroker, input::ToolInput, lsp::open_file::OpenFileRequest},
-    inline_completion::symbols_tracker::SymbolTrackerInline,
 };
+
+fn new_dummy_message_properties() -> SymbolEventMessageProperties {
+    let (dummy_sender, _dummy_receiver) = tokio::sync::mpsc::unbounded_channel();
+    SymbolEventMessageProperties::new(
+        SymbolEventRequestId::new("dummy".to_owned()),
+        dummy_sender,
+        "dummy_editor_url".to_owned(),
+        tokio_util::sync::CancellationToken::new(),
+        LLMProperties::new(
+            LLMType::Llama3_1_8bInstruct,
+            LLMProvider::FireworksAI,
+            LLMProviderAPIKeys::FireworksAI(FireworksAPIKey::new("dummy_key".to_owned()))
+        )
+    )
+}
 
 use super::anchored::AnchoredSymbol;
 use super::errors::SymbolError;
@@ -140,19 +154,16 @@ use super::ui_event::UIEventWithID;
 #[derive(Clone)]
 pub struct ToolBox {
     tools: Arc<ToolBroker>,
-    symbol_broker: Arc<SymbolTrackerInline>,
     editor_parsing: Arc<EditorParsing>,
 }
 
 impl ToolBox {
     pub fn new(
         tools: Arc<ToolBroker>,
-        symbol_broker: Arc<SymbolTrackerInline>,
         editor_parsing: Arc<EditorParsing>,
     ) -> Self {
         Self {
             tools,
-            symbol_broker,
             editor_parsing,
         }
     }
@@ -5742,10 +5753,9 @@ FILEPATH: {fs_file_path}
     }
 
     pub async fn get_file_content(&self, fs_file_path: &str) -> Result<String, SymbolError> {
-        self.symbol_broker
-            .get_file_content(fs_file_path)
+        self.file_open(fs_file_path.to_owned(), new_dummy_message_properties())
             .await
-            .ok_or(SymbolError::UnableToReadFileContent)
+            .map(|response| response.contents())
     }
 
     pub async fn gather_important_symbols_with_definition(
@@ -6393,31 +6403,15 @@ FILEPATH: {fs_file_path}
     ) -> Option<Vec<OutlineNode>> {
         self.get_outline_nodes_from_editor(fs_file_path, message_properties)
             .await
-        // let file_open_result = self
-        //     .file_open(fs_file_path.to_owned(), message_properties.clone())
-        //     .await;
-        // if let Err(_) = file_open_result {
-        //     return None;
-        // }
-        // let file_open_result = file_open_result.expect("if let Err to hold");
-        // let language_config = self.editor_parsing.for_file_path(fs_file_path);
-        // if language_config.is_none() {
-        //     return None;
-        // }
-        // let outline_nodes = language_config
-        //     .expect("is_none to hold")
-        //     .generate_outline_fresh(file_open_result.contents_ref().as_bytes(), fs_file_path);
-        // Some(outline_nodes)
     }
 
     /// Sends a request to the editor to get the outline nodes
     pub async fn get_outline_nodes_from_editor(
         &self,
         fs_file_path: &str,
-        message_properties: SymbolEventMessageProperties,
     ) -> Option<Vec<OutlineNode>> {
         let input = ToolInput::OutlineNodesUsingEditor(OutlineNodesUsingEditorRequest::new(
-            fs_file_path.to_owned(),
+            fs_file_path.to_owned(), 
             message_properties.editor_url(),
         ));
         self.tools
@@ -6502,9 +6496,9 @@ FILEPATH: {fs_file_path}
         fs_file_path: &str,
         range: &Range,
     ) -> Option<Vec<OutlineNode>> {
-        self.symbol_broker
-            .get_symbols_in_range(fs_file_path, range)
+        self.get_outline_nodes_from_editor(fs_file_path)
             .await
+            .map(|nodes| nodes.into_iter().filter(|node| node.range().intersects_with_another_range(range)).collect())
     }
 
     pub async fn force_add_document(

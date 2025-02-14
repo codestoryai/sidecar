@@ -1,6 +1,6 @@
 use crate::{
-    agentic::symbol::identifier::LLMProperties, chunking::languages::TSLanguageParsing,
-    inline_completion::symbols_tracker::SymbolTrackerInline,
+    agentic::symbol::identifier::LLMProperties, 
+    chunking::languages::TSLanguageParsing,
 };
 use async_trait::async_trait;
 use llm_client::broker::LLMBroker;
@@ -103,7 +103,7 @@ impl ToolBroker {
     pub async fn new(
         llm_client: Arc<LLMBroker>,
         code_edit_broker: Arc<CodeEditBroker>,
-        symbol_tracking: Arc<SymbolTrackerInline>,
+        editor_parsing: Arc<EditorParsing>,
         language_broker: Arc<TSLanguageParsing>,
         tool_broker_config: ToolBrokerConfiguration,
         // Use this if the llm we were talking to times out or does not produce
@@ -128,7 +128,7 @@ impl ToolBroker {
         tools.insert(
             ToolType::FindCodeSnippets,
             Box::new(FindCodeSectionsToEdit::new(
-                symbol_tracking,
+                editor_parsing,
                 language_broker,
                 code_edit_broker.clone(),
                 llm_client.clone(),
