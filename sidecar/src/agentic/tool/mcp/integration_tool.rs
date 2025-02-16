@@ -1,8 +1,14 @@
 use async_trait::async_trait;
+use llm_client::broker::{MCPTool, ToolInputSchema};
 use mcp_client_rs::{client::Client, MessageContent, ResourceContents};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
+use std::{
+    collections::BTreeMap,
+    error::Error as StdError,
+    sync::Arc,
+};
+use xmltree::Element;
 
 use crate::agentic::tool::{
     errors::ToolError,
@@ -75,6 +81,91 @@ impl McpTool {
             schema,
             client,
         }
+    }
+}
+
+impl MCPTool for McpTool {
+    fn name(&self) -> &str {
+        &self.full_name
+    }
+    
+    fn description(&self) -> Option<&str> {
+        Some(&self.description)
+    }
+    
+    fn input_schema(&self) -> ToolInputSchema {
+        let properties = self.schema
+            .as_object()
+            .map(|obj| {
+                let mut btree = BTreeMap::new();
+                for (k, v) in obj {
+                    btree.insert(k.clone(), v.clone());
+                }
+                btree
+            })
+            .unwrap_or_default();
+
+        ToolInputSchema {
+            r#type: "object".to_string(),
+            properties: Some(properties),
+            required: self.schema.get("required")
+                .and_then(|v| v.as_array())
+                .map(|arr| arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()),
+        }
+    }
+
+    fn parse_xml_input(&self, xml_input: &str) -> Result<serde_json::Map<String, Value>, Box<dyn StdError>> {
+        let root = Element::parse(xml_input.as_bytes())
+            .map_err(|e| Box::new(ToolError::InvalidInput(format!("Failed to parse XML input: {}", e))) as Box<dyn StdError>)?;
+        
+        let mut map = serde_json::Map::new();
+        
+        for child in root.children {
+            if let xmltree::XMLNode::Element(child_elem) = child {
+                if let Some(text) = child_elem.get_text() {
+                    map.insert(child_elem.name.clone(), Value::String(text.to_string()));
+                }
+            }
+        }
+        
+        Ok(map)
+    }
+
+    fn validate_xml_input(&self, xml_input: &str) -> Result<bool, Box<dyn StdError>> {
+        let json_input = self.parse_xml_input(xml_input)?;
+        
+        // Check required fields
+        if let Some(required) = self.schema.get("required").and_then(|r| r.as_array()) {
+            for field in required {
+                if let Some(field_name) = field.as_str() {
+                    if !json_input.contains_key(field_name) {
+                        return Ok(false);
+                    }
+                }
+            }
+        }
+        
+        // Check property types
+        if let Some(properties) = self.schema.get("properties").and_then(|p| p.as_object()) {
+            for (key, schema_value) in properties {
+                if let Some(input_value) = json_input.get(key) {
+                    if let Some(expected_type) = schema_value.get("type").and_then(|t| t.as_str()) {
+                        match expected_type {
+                            "string" => if !input_value.is_string() { return Ok(false); },
+                            "number" => if !input_value.is_number() { return Ok(false); },
+                            "boolean" => if !input_value.is_boolean() { return Ok(false); },
+                            "object" => if !input_value.is_object() { return Ok(false); },
+                            "array" => if !input_value.is_array() { return Ok(false); },
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(true)
     }
 }
 
@@ -321,6 +412,81 @@ mod tests {
         let input = McpToolInput { partial };
         let result = dyn_tool.invoke(ToolInput::McpTool(input)).await;
         assert!(result.is_ok(), "Should succeed with all required fields");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_xml_input_parsing() -> anyhow::Result<()> {
+        let client = setup_test_client().await?;
+        let tool = McpTool::new(
+            "time".to_string(),
+            "convert_time".to_string(),
+            "Convert time".to_string(),
+            CONVERT_TIME_SCHEMA.clone(),
+            Arc::clone(&client),
+        );
+
+        // Test valid XML input
+        let xml_input = r#"<convert_time>
+            <source_timezone>America/New_York</source_timezone>
+            <time>16:30</time>
+            <target_timezone>Asia/Tokyo</target_timezone>
+        </convert_time>"#;
+
+        let result = tool.validate_xml_input(xml_input)?;
+        assert!(result, "Valid XML input should pass validation");
+
+        // Test invalid XML input (missing required field)
+        let invalid_xml = r#"<convert_time>
+            <source_timezone>America/New_York</source_timezone>
+            <target_timezone>Asia/Tokyo</target_timezone>
+        </convert_time>"#;
+
+        let result = tool.validate_xml_input(invalid_xml)?;
+        assert!(!result, "Invalid XML input should fail validation");
+
+        // Test XML to JSON conversion
+        let json_map = tool.parse_xml_input(xml_input)?;
+        assert_eq!(json_map.get("source_timezone").unwrap().as_str().unwrap(), "America/New_York");
+        assert_eq!(json_map.get("time").unwrap().as_str().unwrap(), "16:30");
+        assert_eq!(json_map.get("target_timezone").unwrap().as_str().unwrap(), "Asia/Tokyo");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_mcp_tool_with_xml_input() -> anyhow::Result<()> {
+        let client = setup_test_client().await?;
+        let tool = McpTool::new(
+            "time".to_string(),
+            "convert_time".to_string(),
+            "Convert time".to_string(),
+            CONVERT_TIME_SCHEMA.clone(),
+            Arc::clone(&client),
+        );
+
+        let xml_input = r#"<convert_time>
+            <source_timezone>America/New_York</source_timezone>
+            <time>16:30</time>
+            <target_timezone>Asia/Tokyo</target_timezone>
+        </convert_time>"#;
+
+        let partial = McpToolPartial {
+            full_name: "mcp::time::convert_time".to_string(),
+            json: serde_json::Map::new(),
+            xml_input: Some(xml_input.to_string()),
+        };
+
+        let input = ToolInput::McpTool(McpToolInput { partial });
+        let result = tool.invoke(input).await?;
+
+        match result {
+            ToolOutput::McpTool(response) => {
+                assert!(response.data.contains("time_difference"), "Response should contain time_difference field");
+            }
+            _ => panic!("Unexpected response type"),
+        }
 
         Ok(())
     }
