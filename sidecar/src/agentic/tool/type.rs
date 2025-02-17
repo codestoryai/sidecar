@@ -97,6 +97,8 @@ pub enum ToolType {
     // code editing warmup tool
     CodeEditingWarmupTool,
     // grab outline nodes using the editor
+    // Ask an expert for help
+    AskExpert,
     OutlineNodesUsingEditor,
     // filters references
     ReferencesFilter,
@@ -243,14 +245,12 @@ impl std::fmt::Display for ToolType {
             ToolType::ContextDrivenChatReply => write!(f, "Context driven chat reply"),
             ToolType::NewExchangeDuringSession => write!(f, "New exchange during session"),
             ToolType::UndoChangesMadeDuringSession => write!(f, "Undo changes made during session"),
-            ToolType::ContextDriveHotStreakReply => write!(
-                f,
-                "Context driven hot streak reply which looks at things out of scope"
-            ),
+            ToolType::ContextDriveHotStreakReply => write!(f, "Context drive hot streak reply"),
             ToolType::TerminalCommand => write!(f, "execute_command"),
             ToolType::SearchFileContentWithRegex => write!(f, "search_files"),
             ToolType::ListFiles => write!(f, "list_files"),
             ToolType::AskFollowupQuestions => write!(f, "ask_followup_question"),
+            ToolType::AskExpert => write!(f, "ask_expert"),
             ToolType::AttemptCompletion => write!(f, "attempt_completion"),
             ToolType::RepoMapGeneration => write!(f, "repo_map_generation"),
             ToolType::SubProcessSpawnedPendingOutput => {

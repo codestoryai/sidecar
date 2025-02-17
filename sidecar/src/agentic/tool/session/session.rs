@@ -3125,6 +3125,9 @@ reason: {}"#,
                     exchange_id.to_owned(),
                 );
             }
+            ToolInputPartial::AskExpert(ask_expert) => {
+                println!("ask expert: {}", ask_expert.to_string());
+            }
         }
         Ok(self)
     }
