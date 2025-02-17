@@ -285,5 +285,6 @@ fn tree_sitter_router() -> Router {
 
 fn file_operations_router() -> Router {
     use axum::routing::*;
-    Router::new().route("/edit_file", post(sidecar::webserver::file_edit::file_edit))
+    Router::new()
+        .route("/edit_file", post(sidecar::webserver::file_edit::file_edit))
 }
