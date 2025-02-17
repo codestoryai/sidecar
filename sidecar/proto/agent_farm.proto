@@ -1,0 +1,303 @@
+syntax = "proto3";
+package agent_farm;
+
+// Main service definition
+service AgentFarmService {
+  // Agent Operations
+  rpc AgentSessionChat (AgentSessionRequest) returns (stream AgentResponse);
+  rpc AgentSessionEdit (AgentEditRequest) returns (stream AgentEditResponse);
+  rpc AgentToolUse (ToolUseRequest) returns (stream ToolUseResponse);
+  
+  // File Operations
+  rpc EditFile (EditFileRequest) returns (EditFileResponse);
+  
+  // Tree-Sitter Operations
+  rpc ExtractDocumentation (DocumentationRequest) returns (DocumentationResponse);
+  rpc ValidateTreeSitter (TreeSitterValidationRequest) returns (TreeSitterValidationResponse);
+
+  // New agentic operations
+  rpc ProbeRequestStop (ProbeStopRequest) returns (ProbeStopResponse);
+  rpc CodeSculpting (CodeSculptingRequest) returns (stream AgentResponse);
+  rpc CodeSculptingHeal (CodeSculptingHealRequest) returns (CodeSculptingHealResponse);
+  rpc PushDiagnostics (AgenticDiagnosticsRequest) returns (AgenticDiagnosticsResponse);
+  rpc SweBench (SweBenchRequest) returns (SweBenchResponse);
+  rpc VerifyModelConfig (VerifyModelConfigRequest) returns (VerifyModelConfigResponse);
+  rpc CancelRunningExchange (CancelExchangeRequest) returns (stream AgentResponse);
+  rpc UserFeedbackOnExchange (FeedbackExchangeRequest) returns (stream AgentResponse);
+  rpc HandleSessionUndo (SessionUndoRequest) returns (SessionUndoResponse);
+}
+
+// Common Types
+message Position {
+  uint32 line = 1;
+  uint32 character = 2;
+}
+
+message Range {
+  Position start = 1;
+  Position end = 2;
+}
+
+message UserContext {
+  string repo_ref = 1;
+  repeated PreciseContext precise_context = 2;
+  optional CursorPosition cursor_position = 3;
+  optional ViewPort current_view_port = 4;
+  string language = 5;
+}
+
+// Request/Response Messages
+message AgentSessionRequest {
+  string session_id = 1;
+  string exchange_id = 2;
+  string editor_url = 3;
+  string query = 4;
+  UserContext user_context = 5;
+  RepoRef repo_ref = 6;
+  string root_directory = 7;
+  repeated string project_labels = 8;
+  bool codebase_search = 9;
+  string access_token = 10;
+  LLMClientConfig model_configuration = 11;
+  repeated string all_files = 12;
+  repeated string open_files = 13;
+  string shell = 14;
+  optional string aide_rules = 15;
+  bool reasoning = 16;
+  bool semantic_search = 17;
+  bool is_devtools_context = 18;
+}
+
+message AgentResponse {
+  oneof response {
+    string thinking = 1;
+    string action = 2;
+    Error error = 3;
+  }
+}
+
+message AgentEditRequest {
+  string file_path = 1;
+  string content = 2;
+  Range edit_range = 3;
+  UserContext context = 4;
+}
+
+message AgentEditResponse {
+  string edited_content = 1;
+  Range modified_range = 2;
+}
+
+message ToolUseRequest {
+  string tool_name = 1;
+  map<string, string> parameters = 2;
+  UserContext context = 3;
+}
+
+message ToolUseResponse {
+  string result = 1;
+  bool success = 2;
+  optional string error = 3;
+}
+
+message EditFileRequest {
+  string file_path = 1;
+  string content = 2;
+}
+
+message EditFileResponse {
+  bool success = 1;
+  optional string error = 2;
+}
+
+message DocumentationRequest {
+  string file_content = 1;
+  string language = 2;
+}
+
+message DocumentationResponse {
+  repeated string documentation_strings = 1;
+}
+
+message TreeSitterValidationRequest {
+  string content = 1;
+  string language = 2;
+}
+
+message TreeSitterValidationResponse {
+  bool is_valid = 1;
+  optional string error = 2;
+}
+
+message Error {
+  string message = 1;
+  ErrorKind kind = 2;
+}
+
+enum ErrorKind {
+  UNKNOWN = 0;
+  USER = 1;
+  NOT_FOUND = 2;
+  CONFIGURATION = 3;
+  UPSTREAM_SERVICE = 4;
+  INTERNAL = 5;
+}
+
+// Additional type definitions needed by UserContext
+message PreciseContext {
+  Symbol symbol = 1;
+  repeated string hover_text = 2;
+  DefinitionSnippet definition_snippet = 3;
+  string fs_file_path = 4;
+  string relative_file_path = 5;
+  Range range = 6;
+}
+
+message Symbol {
+  optional string fuzzy_name = 1;
+}
+
+message CursorPosition {
+  Position start_position = 1;
+  Position end_position = 2;
+}
+
+message ViewPort {
+  Position start_position = 1;
+  Position end_position = 2;
+  string relative_path = 3;
+  string fs_file_path = 4;
+  string text_on_screen = 5;
+}
+
+message DefinitionSnippet {
+  string context = 1;
+  uint32 start_line = 2;
+  uint32 end_line = 3;
+}
+
+// New agentic message types
+message ProbeStopRequest {
+  string request_id = 1;
+}
+
+message ProbeStopResponse {
+  bool done = 1;
+}
+
+message CodeSculptingRequest {
+  string request_id = 1;
+  string instruction = 2;
+}
+
+message CodeSculptingHealRequest {
+  string request_id = 1;
+}
+
+message CodeSculptingHealResponse {
+  bool done = 1;
+}
+
+message AgenticDiagnosticsRequest {
+  string fs_file_path = 1;
+  repeated DiagnosticData diagnostics = 2;
+  optional string source = 3;
+}
+
+message DiagnosticData {
+  string message = 1;
+  Range range = 2;
+  string range_content = 3;
+}
+
+message AgenticDiagnosticsResponse {
+  bool done = 1;
+}
+
+message SweBenchRequest {
+  string git_dname = 1;
+  string problem_statement = 2;
+  string editor_url = 3;
+  string test_endpoint = 4;
+  optional string repo_map_file = 5;
+  string gcloud_access_token = 6;
+  string swe_bench_id = 7;
+}
+
+message SweBenchResponse {
+  bool done = 1;
+}
+
+message VerifyModelConfigRequest {
+  LLMClientConfig model_configuration = 1;
+}
+
+message VerifyModelConfigResponse {
+  bool valid = 1;
+  optional string error = 2;
+}
+
+message CancelExchangeRequest {
+  string exchange_id = 1;
+  string session_id = 2;
+  string editor_url = 3;
+  string access_token = 4;
+  LLMClientConfig model_configuration = 5;
+}
+
+message FeedbackExchangeRequest {
+  string exchange_id = 1;
+  string session_id = 2;
+  optional uint32 step_index = 3;
+  string editor_url = 4;
+  bool accepted = 5;
+  string access_token = 6;
+  LLMClientConfig model_configuration = 7;
+}
+
+message SessionUndoRequest {
+  string session_id = 1;
+  string exchange_id = 2;
+}
+
+message SessionUndoResponse {
+  bool done = 1;
+}
+
+message PlanGenerationRequest {
+  string session_id = 1;
+  string exchange_id = 2;
+  string editor_url = 3;
+  string query = 4;
+  UserContext user_context = 5;
+  string root_directory = 6;
+  bool codebase_search = 7;
+  repeated string project_labels = 8;
+  RepoRef repo_ref = 9;
+  optional string aide_rules = 10;
+}
+
+message PlanIterationRequest {
+  string session_id = 1;
+  string exchange_id = 2;
+  string editor_url = 3;
+  string query = 4;
+  UserContext user_context = 5;
+  string root_directory = 6;
+  bool codebase_search = 7;
+  repeated string project_labels = 8;
+  RepoRef repo_ref = 9;
+  optional string aide_rules = 10;
+}
+
+message RepoRef {
+  string repo_name = 1;
+  string branch = 2;
+  string commit_hash = 3;
+}
+
+message LLMClientConfig {
+  string model_type = 1;
+  string provider = 2;
+  map<string, string> config = 3;
+}
