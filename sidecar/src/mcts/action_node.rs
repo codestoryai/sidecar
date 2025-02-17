@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    path::Path,
     process::Stdio,
     sync::Arc,
 };
@@ -2126,30 +2127,21 @@ impl SearchTree {
         let graph_serialised = match serde_json::to_string(&self) {
             Ok(serialized) => serialized,
             Err(err) => {
-                eprintln!("mcts::select::Failed to serialize graph: {}", err);
-                String::from("Failed to serialize graph")
+                eprintln!("Failed to serialize graph: {}", err);
+                return;
             }
         };
 
-        // Create directory if it doesn't exist
-        if let Err(err) = tokio::fs::create_dir_all(log_dir).await {
-            eprintln!("Failed to create log directory: {}", err);
+        if let Err(e) = create_dir_all_with_retry(log_dir).await {
+            eprintln!("Failed to create log directory after retries: {}", e);
             return;
         }
 
         let log_file_name = format!("{}/mcts-{}.json", log_dir, request_id);
-
-        match tokio::fs::write(&log_file_name, graph_serialised).await {
-            Ok(_) => {
-                println!(
-                    "mcts::action_node::save_serialised_graph::Saved graph to {}",
-                    log_file_name
-                );
-            }
-            Err(err) => eprintln!(
-                "mcts::action_node::save_serialised_graph::Failed to save graph: {}",
-                err
-            ),
+        
+        match write_file_with_retry(&log_file_name, &graph_serialised).await {
+            Ok(_) => println!("Saved graph to {}", log_file_name),
+            Err(e) => eprintln!("Failed to save graph after retries: {}", e),
         }
     }
 }

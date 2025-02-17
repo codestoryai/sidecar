@@ -163,16 +163,17 @@ impl Application {
     }
 
     /// This can blow up, so be careful
-    pub async fn setup_scratch_pad(config: &Configuration) {
+    pub async fn setup_scratch_pad(config: &Configuration) -> anyhow::Result<()> {
         let scratch_pad_path = config.scratch_pad();
         if !tokio::fs::try_exists(&scratch_pad_path)
             .await
             .expect("checking for scratch_pad directory creation should work")
         {
-            tokio::fs::create_dir_all(&scratch_pad_path)
+            create_dir_all_with_retry(&scratch_pad_path)
                 .await
-                .expect("scratch_pad directory creation failed");
+                .map_err(|e| anyhow::anyhow!("Failed to create scratch_pad directory: {}", e))?;
         }
+        Ok(())
     }
 }
 
