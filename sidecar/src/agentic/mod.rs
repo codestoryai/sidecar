@@ -19,6 +19,7 @@
 //!
 //! Nomenclature (cause we keep things professional here, but everyone loves anime and I hate paying tech-debt)
 //! agent == mecha
+pub mod farm;
 pub mod memory;
 pub mod swe_bench;
 pub mod symbol;
