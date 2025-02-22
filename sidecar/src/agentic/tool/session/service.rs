@@ -491,6 +491,38 @@ impl SessionService {
 
         session = session.accept_open_exchanges_if_any(message_properties.clone());
 
+        // Check if total input tokens from largest incomplete action node exceed 150k
+        let mut reasoning = reasoning;
+        if !reasoning {
+            let max_tokens_node = session.action_nodes().iter()
+                .filter(|node| {
+                    // A node is incomplete if:
+                    // 1. Not finished (no AttemptCompletion)
+                    // 2. Not terminal
+                    // 3. Not errored
+                    !node.is_finished() 
+                        && !node.observation()
+                            .map(|obs| obs.terminal)
+                            .unwrap_or(false)
+                        && !matches!(node.action(), Some(ActionToolParameters::Errored(_)))
+                })
+                .filter_map(|node| {
+                    node.get_llm_usage_statistics().map(|stats| {
+                        let total_tokens = stats.input_tokens().unwrap_or(0) + 
+                            stats.cached_input_tokens().unwrap_or(0);
+                        (node, total_tokens)
+                    })
+                })
+                .max_by_key(|&(_, tokens)| tokens);
+
+            if let Some((_, total_tokens)) = max_tokens_node {
+                if total_tokens > 150_000 {
+                    reasoning = true;
+                    println!("Enabling reasoning flow: incomplete node input tokens ({}) exceed 150k", total_tokens);
+                }
+            }
+        }
+
         // now that we have saved it we can start the loop over here and look out for the cancellation
         // token which will imply that we should end the current loop
         if reasoning {
