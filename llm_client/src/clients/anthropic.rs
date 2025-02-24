@@ -402,6 +402,7 @@ impl AnthropicClient {
         match llm_type {
             LLMType::ClaudeOpus => Ok("claude-3-opus-20240229".to_owned()),
             LLMType::ClaudeSonnet => Ok("claude-3-5-sonnet-20241022".to_owned()),
+            LLMType::ClaudeSonnet37 => Ok("claude-3-7-sonnet-20250219".to_owned()),
             LLMType::ClaudeHaiku => Ok("claude-3-haiku-20240307".to_owned()),
             LLMType::Custom(model) => Ok(model.to_owned()),
             _ => Err(LLMClientError::UnSupportedModel),

@@ -134,6 +134,7 @@ impl<'de> Deserialize<'de> for LLMType {
                     "DeepSeekCoder33BInstruct" => Ok(LLMType::DeepSeekCoder33BInstruct),
                     "ClaudeOpus" => Ok(LLMType::ClaudeOpus),
                     "ClaudeSonnet" => Ok(LLMType::ClaudeSonnet),
+                    "ClaudeSonnet37" => Ok(LLMType::ClaudeSonnet37),
                     "ClaudeHaiku" => Ok(LLMType::ClaudeHaiku),
                     "PPLXSonnetSmall" => Ok(LLMType::PPLXSonnetSmall),
                     "CohereRerankV3" => Ok(LLMType::CohereRerankV3),
@@ -196,7 +197,7 @@ impl LLMType {
     pub fn is_anthropic(&self) -> bool {
         matches!(
             self,
-            LLMType::ClaudeOpus | LLMType::ClaudeSonnet | LLMType::ClaudeHaiku
+            LLMType::ClaudeOpus | LLMType::ClaudeSonnet | LLMType::ClaudeHaiku | LLMType::ClaudeSonnet37
         )
     }
 
@@ -248,6 +249,7 @@ impl fmt::Display for LLMType {
             LLMType::DeepSeekCoderV3 => write!(f, "deepseek/deepseek-chat"),
             LLMType::ClaudeOpus => write!(f, "ClaudeOpus"),
             LLMType::ClaudeSonnet => write!(f, "ClaudeSonnet"),
+            LLMType::ClaudeSonnet37 => write!(f, "ClaudeSonnet37"),
             LLMType::ClaudeHaiku => write!(f, "ClaudeHaiku"),
             LLMType::PPLXSonnetSmall => write!(f, "PPLXSonnetSmall"),
             LLMType::CohereRerankV3 => write!(f, "CohereRerankV3"),
