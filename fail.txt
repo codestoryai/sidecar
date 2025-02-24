@@ -1,0 +1,1 @@
+Error updating branch: Command '['git', 'commit', '-m', 'feat: sync local changes', '--no-verify']' returned non-zero exit status 1.
