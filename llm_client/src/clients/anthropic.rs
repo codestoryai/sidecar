@@ -228,6 +228,13 @@ enum ContentBlockDeltaType {
 }
 
 #[derive(serde::Serialize, Debug, Clone)]
+struct AnthropicThinking {
+    #[serde(rename = "type")]
+    thinking_type: String,
+    budget_tokens: usize,
+}
+
+#[derive(serde::Serialize, Debug, Clone)]
 struct AnthropicRequest {
     system: Vec<AnthropicMessageContent>,
     messages: Vec<AnthropicMessage>,
@@ -238,6 +245,8 @@ struct AnthropicRequest {
     stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     max_tokens: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinking: Option<AnthropicThinking>,
     model: String,
 }
 
@@ -251,6 +260,12 @@ impl AnthropicRequest {
             Some(tokens) => Some(tokens),
             None => Some(8192),
         };
+        let thinking = completion_request
+            .thinking_budget()
+            .map(|budget| AnthropicThinking {
+                thinking_type: "enabled".to_owned(),
+                budget_tokens: budget,
+            });
         let messages = completion_request.messages();
         // grab the tools over here ONLY from the system message
         let tools = messages
@@ -335,6 +350,7 @@ impl AnthropicRequest {
             tools,
             stream: true,
             max_tokens,
+            thinking,
             model: model_str,
         }
     }
@@ -345,6 +361,12 @@ impl AnthropicRequest {
     ) -> Self {
         let temperature = completion_request.temperature();
         let max_tokens = completion_request.get_max_tokens();
+        let thinking = completion_request
+            .thinking_budget()
+            .map(|budget| AnthropicThinking {
+                thinking_type: "enabled".to_owned(),
+                budget_tokens: budget,
+            });
         let messages = vec![AnthropicMessage::new(
             "user".to_owned(),
             completion_request.prompt().to_owned(),
@@ -356,6 +378,7 @@ impl AnthropicRequest {
             tools: vec![],
             stream: true,
             max_tokens,
+            thinking,
             model: model_str,
         }
     }
