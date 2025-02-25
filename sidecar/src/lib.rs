@@ -16,3 +16,11 @@ pub mod state;
 pub mod tree_printer;
 pub mod user_context;
 pub mod webserver;
+
+#[cfg(feature = "grpc")]
+pub mod proto {
+    tonic::include_proto!("agent_farm");
+}
+
+#[cfg(feature = "grpc")]
+pub mod grpc;
