@@ -482,6 +482,12 @@ impl AnthropicClient {
             return Err(LLMClientError::UnauthorizedAccess);
         }
 
+        if let Err(e) = response_stream.error_for_status_ref() {
+            let body = response_stream.text().await?;
+            println!("anthropic::err {body}");
+            return Err(e.into());
+        }
+
         let mut event_source = response_stream.bytes_stream().eventsource();
 
         // let event_next = event_source.next().await;
@@ -755,6 +761,12 @@ impl LLMClient for AnthropicClient {
             return Err(LLMClientError::UnauthorizedAccess);
         }
 
+        if let Err(e) = response_stream.error_for_status_ref() {
+            let body = response_stream.text().await?;
+            println!("anthropic::err {body}");
+            return Err(e.into());
+        }
+
         let mut event_source = response_stream.bytes_stream().eventsource();
 
         let mut input_tokens = 0;
@@ -891,6 +903,12 @@ impl LLMClient for AnthropicClient {
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
             error!("Unauthorized access to Anthropic API");
             return Err(LLMClientError::UnauthorizedAccess);
+        }
+
+        if let Err(e) = response.error_for_status_ref() {
+            let body = response.text().await?;
+            println!("anthropic::err {body}");
+            return Err(e.into());
         }
 
         let mut response_stream = response.bytes_stream().eventsource();
