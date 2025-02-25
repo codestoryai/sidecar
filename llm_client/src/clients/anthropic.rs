@@ -470,6 +470,12 @@ impl AnthropicClient {
             return Err(LLMClientError::UnauthorizedAccess);
         }
 
+        if let Err(e) = response_stream.error_for_status_ref() {
+            let body = response_stream.text().await?;
+            println!("anthropic::err {body}");
+            return Err(e.into());
+        }
+
         let mut event_source = response_stream.bytes_stream().eventsource();
 
         // let event_next = event_source.next().await;
