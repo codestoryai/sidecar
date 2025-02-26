@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:3001
+      - NEXT_PUBLIC_WS_URL=ws://backend:3001/ws
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ../
+      dockerfile: sidecar/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./data:/data
+
+volumes:
+  data:

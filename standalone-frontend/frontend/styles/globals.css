@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 17, 17, 17;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+.suggestions-panel {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 50;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.suggestion-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+  background-color: rgba(55, 65, 81, 0.5);
+}
+
+/* CodeMirror customizations */
+.cm-editor {
+  height: 100% !important;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+.cm-editor .cm-scroller {
+  line-height: 1.6;
+}
+
+.cm-editor .cm-line {
+  padding: 0 4px;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(31, 41, 55);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(107, 114, 128);
+}

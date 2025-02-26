@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:3001
+      - NEXT_PUBLIC_WS_URL=ws://backend:3001/ws
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ../
+      dockerfile: sidecar/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    volumes:
+      - ./data:/data
+      - ../:/app
+    command: cargo watch -x run
+
+volumes:
+  data:
