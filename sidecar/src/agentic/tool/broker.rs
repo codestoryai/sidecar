@@ -68,9 +68,9 @@ use super::{
     reward::client::RewardClientGenerator,
     search::big_search::BigSearchBroker,
     session::{
-        ask_followup_question::AskFollowupQuestions, attempt_completion::AttemptCompletionClient,
-        chat::SessionChatClient, exchange::SessionExchangeClient,
-        hot_streak::SessionHotStreakClient,
+        ask_followup_question::AskFollowupQuestions, ask_expert::AskExpert,
+        attempt_completion::AttemptCompletionClient, chat::SessionChatClient,
+        exchange::SessionExchangeClient, hot_streak::SessionHotStreakClient,
     },
     swe_bench::test_tool::SWEBenchTestTool,
     terminal::terminal::TerminalTool,
@@ -461,6 +461,10 @@ impl ToolBroker {
         tools.insert(
             ToolType::AskFollowupQuestions,
             Box::new(AskFollowupQuestions::new()),
+        );
+        tools.insert(
+            ToolType::AskExpert,
+            Box::new(AskExpert::new()),
         );
         tools.insert(
             ToolType::AttemptCompletion,

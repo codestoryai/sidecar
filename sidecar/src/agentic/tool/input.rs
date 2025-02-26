@@ -1,3 +1,4 @@
+use crate::agentic::tool::session::ask_expert::AskExpertRequest;
 use super::{
     code_edit::{
         code_editor::CodeEditorParameters,
@@ -97,6 +98,7 @@ pub enum ToolInputPartial {
     LSPDiagnostics(WorkspaceDiagnosticsPartial),
     TerminalCommand(TerminalInputPartial),
     AskFollowupQuestions(AskFollowupQuestionsRequest),
+    AskExpert(AskExpertRequest),
     AttemptCompletion(AttemptCompletionClientRequest),
     RepoMapGeneration(RepoMapGeneratorRequestPartial),
     TestRunner(TestRunnerRequestPartial),
@@ -119,6 +121,7 @@ impl ToolInputPartial {
             Self::LSPDiagnostics(_) => ToolType::LSPDiagnostics,
             Self::TerminalCommand(_) => ToolType::TerminalCommand,
             Self::AskFollowupQuestions(_) => ToolType::AskFollowupQuestions,
+            Self::AskExpert(_) => ToolType::AskExpert,
             Self::AttemptCompletion(_) => ToolType::AttemptCompletion,
             Self::RepoMapGeneration(_) => ToolType::RepoMapGeneration,
             Self::TestRunner(_) => ToolType::TestRunner,
@@ -143,6 +146,7 @@ impl ToolInputPartial {
             Self::LSPDiagnostics(lsp_diagnostics) => lsp_diagnostics.to_string(),
             Self::TerminalCommand(terminal_command) => terminal_command.to_string(),
             Self::AskFollowupQuestions(ask_followup_question) => ask_followup_question.to_string(),
+            Self::AskExpert(ask_expert) => ask_expert.to_string(),
             Self::AttemptCompletion(attempt_completion) => attempt_completion.to_string(),
             Self::RepoMapGeneration(repo_map_generator) => repo_map_generator.to_string(),
             Self::TestRunner(test_runner_partial_output) => test_runner_partial_output.to_string(),
@@ -197,6 +201,7 @@ impl ToolInputPartial {
                 serde_json::to_value(context_crunching).ok()
             }
             Self::McpTool(mcp_partial) => serde_json::to_value(mcp_partial).ok(),
+            Self::AskExpert(ask_expert) => serde_json::to_value(ask_expert).ok(),
         }
     }
 
@@ -330,6 +335,8 @@ pub enum ToolInput {
     ListFiles(ListFilesInput),
     // Ask the user some question
     AskFollowupQuestions(AskFollowupQuestionsRequest),
+    // Ask an expert for help
+    AskExpert(AskExpertRequest),
     // Attempt completion of a task
     AttemptCompletion(AttemptCompletionClientRequest),
     // Generates the repo map
@@ -431,6 +438,7 @@ impl ToolInput {
             ToolInput::SearchFileContentWithRegex(_) => ToolType::SearchFileContentWithRegex,
             ToolInput::ListFiles(_) => ToolType::ListFiles,
             ToolInput::AskFollowupQuestions(_) => ToolType::AskFollowupQuestions,
+            ToolInput::AskExpert(_) => ToolType::AskExpert,
             ToolInput::AttemptCompletion(_) => ToolType::AttemptCompletion,
             ToolInput::RepoMapGeneration(_) => ToolType::RepoMapGeneration,
             ToolInput::SubProcessSpawnedPendingOutput(_) => {
@@ -518,6 +526,14 @@ impl ToolInput {
             Ok(request)
         } else {
             Err(ToolError::WrongToolInput(ToolType::AskFollowupQuestions))
+        }
+    }
+
+    pub fn is_ask_expert(self) -> Result<AskExpertRequest, ToolError> {
+        if let ToolInput::AskExpert(request) = self {
+            Ok(request)
+        } else {
+            Err(ToolError::WrongToolInput(ToolType::AskExpert))
         }
     }
 
