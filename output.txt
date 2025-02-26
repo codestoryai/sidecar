@@ -1,0 +1,556 @@
+# Sidecar HTTP API Documentation
+
+## Public Routes
+
+### Health Check
+- **Endpoint**: `/health`
+- **Method**: GET
+- **Response**:
+```json
+{
+    "done": boolean
+}
+```
+- **Description**: Basic health check endpoint to verify service status
+
+### Configuration
+- **Endpoint**: `/config`
+- **Method**: GET
+- **Response**:
+```json
+{
+    "response": string
+}
+```
+- **Description**: Returns current configuration information
+
+### Version
+- **Endpoint**: `/version`
+- **Method**: GET
+- **Response**:
+```json
+{
+    "version_hash": string,
+    "package_version": string
+}
+```
+- **Description**: Returns version information of the sidecar service
+
+## Tree-sitter Operations
+
+### Extract Documentation Strings
+- **Endpoint**: `/tree-sitter/extract-documentation`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "language": string,
+    "source": string
+}
+```
+- **Response**:
+```json
+{
+    "documentation": string[]
+}
+```
+- **Description**: Extracts documentation strings from source code
+
+### Extract Diagnostics Range
+- **Endpoint**: `/tree-sitter/extract-diagnostics-range`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "range": {
+        "start": { "line": number, "character": number },
+        "end": { "line": number, "character": number }
+    },
+    "text_document_web": {
+        "text": string,
+        "language": string
+    },
+    "threshold_to_expand": number
+}
+```
+- **Response**:
+```json
+{
+    "range": {
+        "start": { "line": number, "character": number },
+        "end": { "line": number, "character": number }
+    }
+}
+```
+- **Description**: Extracts and expands diagnostic ranges from code
+
+### Validate Tree-sitter Node
+- **Endpoint**: `/tree-sitter/validate`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "language": string,
+    "source": string
+}
+```
+- **Response**:
+```json
+{
+    "valid": boolean
+}
+```
+- **Description**: Validates if source code is parseable by tree-sitter
+
+### Validate XML
+- **Endpoint**: `/tree-sitter/validate-xml`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "input": string
+}
+```
+- **Response**:
+```json
+{
+    "valid": boolean
+}
+```
+- **Description**: Validates XML syntax
+
+## File Operations
+
+### Edit File
+- **Endpoint**: `/file/edit`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "file_path": string,
+    "file_content": string,
+    "new_content": string,
+    "language": string,
+    "user_query": string,
+    "session_id": string,
+    "code_block_index": number,
+    "model_config": {
+        // LLM client configuration
+    }
+}
+```
+- **Response**: Server-Sent Events (SSE) stream with following event types:
+```json
+{
+    "type": "Message" | "Action" | "TextEdit" | "TextEditStreaming" | "Status",
+    "data": {
+        // Varies based on type
+    }
+}
+```
+- **Description**: Handles file editing operations with streaming updates
+
+## Inline Completion Operations
+
+### Get Inline Completion
+- **Endpoint**: `/inline-completion`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "filepath": string,
+    "language": string,
+    "text": string,
+    "position": {
+        "line": number,
+        "character": number
+    },
+    "indentation": string?,
+    "model_config": object,
+    "id": string,
+    "clipboard_content": string?,
+    "type_identifiers": array,
+    "user_id": string?
+}
+```
+- **Response**: Server-Sent Events (SSE) stream of completion suggestions
+- **Description**: Provides real-time code completion suggestions
+
+### Cancel Inline Completion
+- **Endpoint**: `/inline-completion/cancel`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "id": string
+}
+```
+- **Description**: Cancels an ongoing inline completion request
+
+### Document Open
+- **Endpoint**: `/inline-completion/document-open`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "file_path": string,
+    "file_content": string,
+    "language": string
+}
+```
+- **Description**: Notifies when a document is opened for inline completion
+
+### File Content Change
+- **Endpoint**: `/inline-completion/file-content-change`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "file_path": string,
+    "language": string,
+    "file_content": string,
+    "events": [{
+        "range": {
+            "start_line": number,
+            "end_line": number,
+            "start_column": number,
+            "end_column": number
+        },
+        "text": string
+    }]
+}
+```
+- **Description**: Handles file content changes for inline completion
+
+### Get File Content
+- **Endpoint**: `/inline-completion/file-content`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "file_path": string
+}
+```
+- **Response**:
+```json
+{
+    "file_content": string?
+}
+```
+- **Description**: Retrieves current file content
+
+### Get Edited Lines
+- **Endpoint**: `/inline-completion/edited-lines`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "file_path": string
+}
+```
+- **Response**:
+```json
+{
+    "edited_lines": number[]
+}
+```
+- **Description**: Returns list of edited line numbers
+
+### Get Identifier Nodes
+- **Endpoint**: `/inline-completion/identifier-nodes`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "file_path": string,
+    "language": string,
+    "file_content": string,
+    "cursor_line": number,
+    "cursor_column": number
+}
+```
+- **Response**:
+```json
+{
+    "identifier_nodes": [{
+        "name": string,
+        "range": {
+            "start": { "line": number, "character": number },
+            "end": { "line": number, "character": number }
+        }
+    }],
+    "function_parameters": array,
+    "import_nodes": array
+}
+```
+- **Description**: Returns identifier nodes at cursor position
+
+### Get Symbol History
+- **Endpoint**: `/inline-completion/symbol-history`
+- **Method**: POST
+- **Response**:
+```json
+{
+    "symbols": [[string, number[]]],
+    "symbol_content": object,
+    "timestamps": number[]
+}
+```
+- **Description**: Returns history of symbol changes
+
+## Agentic Routes
+
+### Append Plan
+- **Endpoint**: `/agent/plan/append`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "user_query": string,
+    "thread_id": UUID,
+    "editor_url": string,
+    "user_context": {
+        // User context information
+    },
+    "is_deep_reasoning": boolean,
+    "with_lsp_enrichment": boolean,
+    "access_token": string
+}
+```
+- **Description**: Appends a plan to an existing agent thread
+
+## Agent Session Operations
+
+### Chat Session
+- **Endpoint**: `/agent/session/chat`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "session_id": string,
+    "exchange_id": string,
+    "editor_url": string,
+    "query": string,
+    "user_context": object,
+    "repo_ref": object,
+    "project_labels": string[],
+    "root_directory": string,
+    "codebase_search": boolean,
+    "access_token": string,
+    "model_configuration": object,
+    "all_files": string[],
+    "open_files": string[],
+    "shell": string,
+    "aide_rules": string?,
+    "reasoning": boolean,
+    "semantic_search": boolean,
+    "is_devtools_context": boolean
+}
+```
+- **Response**: Server-Sent Events (SSE) stream
+- **Description**: Initiates or continues a chat session with the agent
+
+### Tool Use
+- **Endpoint**: `/agent/session/tool-use`
+- **Method**: POST
+- **Request**: Same as chat session
+- **Response**: Server-Sent Events (SSE) stream
+- **Description**: Executes tool-based operations in agent session
+
+### Plan Generation
+- **Endpoint**: `/agent/session/plan`
+- **Method**: POST
+- **Request**: Same as chat session
+- **Response**: Server-Sent Events (SSE) stream
+- **Description**: Generates a plan for complex operations
+
+### Plan Iteration
+- **Endpoint**: `/agent/session/plan/iterate`
+- **Method**: POST
+- **Request**: Same as chat session
+- **Response**: Server-Sent Events (SSE) stream
+- **Description**: Iterates on an existing plan
+
+### Cancel Running Exchange
+- **Endpoint**: `/agent/session/cancel`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "exchange_id": string,
+    "session_id": string,
+    "editor_url": string,
+    "access_token": string,
+    "model_configuration": object
+}
+```
+- **Description**: Cancels an ongoing exchange in the session
+
+### Verify Model Configuration
+- **Endpoint**: `/agent/verify-model-config`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "model_configuration": object
+}
+```
+- **Response**:
+```json
+{
+    "valid": boolean,
+    "error": string?
+}
+```
+- **Description**: Validates LLM model configuration
+
+## Code Sculpting Operations
+
+### Code Sculpting Request
+- **Endpoint**: `/code-sculpting`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "request_id": string,
+    "instruction": string
+}
+```
+- **Response**:
+```json
+{
+    "done": boolean
+}
+```
+- **Description**: Handles code sculpting operations
+
+### Code Sculpting Heal
+- **Endpoint**: `/code-sculpting/heal`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "request_id": string
+}
+```
+- **Response**:
+```json
+{
+    "done": boolean
+}
+```
+- **Description**: Heals/repairs code after sculpting operations
+
+### Push Diagnostics
+- **Endpoint**: `/diagnostics/push`
+- **Method**: POST
+- **Request**:
+```json
+{
+    "fs_file_path": string,
+    "diagnostics": [{
+        "message": string,
+        "range": {
+            "start": { "line": number, "character": number },
+            "end": { "line": number, "character": number }
+        },
+        "range_content": string
+    }],
+    "source": string?
+}
+```
+- **Response**:
+```json
+{
+    "done": boolean
+}
+```
+- **Description**: Pushes diagnostic information for code analysis
+
+## Notes
+- All endpoints return appropriate HTTP status codes
+- Authentication may be required for certain endpoints
+- Error responses include descriptive messages
+- Some endpoints support streaming responses using Server-Sent Events (SSE)
+
+## Required Enhancements for Full Independence
+
+To make Sidecar a fully independent self-sufficient unit, the following additional capabilities and endpoints would be needed:
+
+### Authentication & Authorization
+1. **Token Management**
+   - `/auth/token` - Generate and manage authentication tokens
+   - `/auth/validate` - Validate token authenticity
+   - `/auth/refresh` - Refresh expired tokens
+
+### Model Management
+1. **LLM Integration**
+   - `/models/list` - List available language models
+   - `/models/configure` - Configure model parameters
+   - `/models/status` - Check model availability and health
+
+### File System Operations
+1. **Extended File Management**
+   - `/fs/watch` - File system watch capabilities
+   - `/fs/search` - Advanced file search with filters
+   - `/fs/git` - Git integration endpoints
+   - `/fs/workspace` - Workspace management
+
+### Language Server Integration
+1. **LSP Management**
+   - `/lsp/start` - Start language servers
+   - `/lsp/status` - Check LSP status
+   - `/lsp/configure` - Configure language servers
+   - `/lsp/capabilities` - Query LSP capabilities
+
+### Caching & Performance
+1. **Cache Management**
+   - `/cache/clear` - Clear various caches
+   - `/cache/status` - Check cache status
+   - `/cache/configure` - Configure caching behavior
+
+### Metrics & Monitoring
+1. **Observability**
+   - `/metrics` - Prometheus-compatible metrics endpoint
+   - `/traces` - Distributed tracing endpoint
+   - `/logs` - Log aggregation and query
+
+### Configuration Management
+1. **Dynamic Configuration**
+   - `/config/update` - Update runtime configuration
+   - `/config/reload` - Reload configuration from disk
+   - `/config/validate` - Validate configuration changes
+
+### Resource Management
+1. **System Resources**
+   - `/resources/status` - CPU, memory, disk usage
+   - `/resources/limits` - Set resource limits
+   - `/resources/scale` - Scale resources up/down
+
+### Plugin System
+1. **Plugin Management**
+   - `/plugins/list` - List available plugins
+   - `/plugins/install` - Install new plugins
+   - `/plugins/configure` - Configure plugin settings
+   - `/plugins/status` - Check plugin health
+
+### Session Management
+1. **Enhanced Session Control**
+   - `/session/cleanup` - Cleanup stale sessions
+   - `/session/transfer` - Transfer session state
+   - `/session/backup` - Backup session data
+
+### Security
+1. **Security Controls**
+   - `/security/scan` - Security scanning endpoints
+   - `/security/audit` - Audit logging
+   - `/security/policy` - Security policy management
+
+These enhancements would make Sidecar:
+1. Independently deployable without external dependencies
+2. Self-managing with proper resource control
+3. Secure with robust authentication
+4. Observable with comprehensive monitoring
+5. Extensible through plugin system
+6. Resilient with proper session management
+7. Configurable for different deployment scenarios

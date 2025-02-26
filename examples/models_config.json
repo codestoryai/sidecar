@@ -1,0 +1,48 @@
+{
+    "enabled_providers": [
+        "OpenAI",
+        "Anthropic",
+        "TogetherAI",
+        "Google",
+        "Cohere",
+        "Mistral",
+        "Meta"
+    ],
+    "model_overrides": {
+        "gpt-4": {
+            "config": {
+                "temperature": 0.7,
+                "max_tokens": 4096,
+                "top_p": 1.0,
+                "frequency_penalty": 0.0,
+                "presence_penalty": 0.0
+            },
+            "enabled": true
+        },
+        "claude-3-opus": {
+            "config": {
+                "temperature": 0.8,
+                "max_tokens": 8192,
+                "top_p": 1.0
+            },
+            "enabled": true
+        },
+        "codellama-70b-instruct": {
+            "config": {
+                "temperature": 0.5,
+                "max_tokens": 4096,
+                "top_p": 0.9
+            },
+            "enabled": true
+        }
+    },
+    "provider_endpoints": {
+        "OpenAI": "https://api.openai.com/v1",
+        "Anthropic": "https://api.anthropic.com/v1",
+        "TogetherAI": "https://api.together.xyz/v1",
+        "Google": "https://generativelanguage.googleapis.com/v1",
+        "Cohere": "https://api.cohere.ai/v1",
+        "Mistral": "https://api.mistral.ai/v1",
+        "Meta": "https://llama.meta.ai/v1"
+    }
+}

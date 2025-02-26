@@ -1,0 +1,74 @@
+{
+    "language_servers": {
+        "rust": {
+            "command": "rust-analyzer",
+            "args": [],
+            "initialization_options": {
+                "checkOnSave": true,
+                "procMacro": true,
+                "diagnostics": {
+                    "enable": true,
+                    "warningsAsHint": []
+                }
+            },
+            "root_markers": ["Cargo.toml"],
+            "capabilities": [
+                "completions",
+                "diagnostics",
+                "formatting",
+                "references",
+                "definition"
+            ]
+        },
+        "typescript": {
+            "command": "typescript-language-server",
+            "args": ["--stdio"],
+            "initialization_options": {
+                "preferences": {
+                    "importModuleSpecifierPreference": "relative"
+                },
+                "typescript": {
+                    "suggest": {
+                        "completeFunctionCalls": true
+                    }
+                }
+            },
+            "root_markers": ["package.json", "tsconfig.json"],
+            "capabilities": [
+                "completions",
+                "diagnostics",
+                "formatting",
+                "references"
+            ]
+        },
+        "python": {
+            "command": "pyright-langserver",
+            "args": ["--stdio"],
+            "initialization_options": {
+                "python": {
+                    "analysis": {
+                        "typeCheckingMode": "basic",
+                        "autoSearchPaths": true
+                    }
+                }
+            },
+            "root_markers": ["pyproject.toml", "setup.py"],
+            "capabilities": [
+                "completions",
+                "diagnostics",
+                "formatting",
+                "references"
+            ]
+        }
+    },
+    "global_settings": {
+        "workspace_folders": ["src", "tests"],
+        "sync_kind": "full",
+        "completion_trigger_characters": [".", ":", ">"],
+        "signature_trigger_characters": ["(", ","],
+        "hover_trigger_characters": [".", ":"],
+        "code_action_trigger_characters": ["."],
+        "format_on_save": true,
+        "max_completion_items": 100
+    }
+}
