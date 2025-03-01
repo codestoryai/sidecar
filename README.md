@@ -18,27 +18,91 @@
 ![Discord Shield](https://discord.com/api/guilds/1138070673756004464/widget.png?style=shield)
 
 
-## Sidecar
+## Overview
 
-Sidecar is the AI brains of Aide the editor. To accomplish the work of creating the prompts, talking to LLM and everything else in between Sidecar is responsible for making sure it all works together.
+Sidecar is the AI brains of Aide, providing intelligent code assistance through:
+- Code completion and suggestions
+- Repository analysis and symbol mapping
+- Git integration and version control
+- Real-time code intelligence
 
-Broadly speaking these are the following important bits in Sidecar:
-- `tool_box.rs` - The collection of all and any tools AI might need is present here, all the language specific smartness is handled by `tool_box.rs`
-- `symbol/` - The symbol folder contains the code which allows each individual symbol to be smart and independent. This can work on any granularity level, all the way from a file to a single function or function inside a class (its very versatile)
-- `llm_prompts/` - This is a relic of the past (and somewhat in use still) for creating prompts especially for the inline completion bits. The inline completions bits are not maintained any longer but if you want to take a stab at working on it, please reach out to us on Discord, we are happy to support you.
-- `repomap` - This creates a repository map using page rank on the code symbols. Most of the code here is a port of the python implementation done on Aider (do check it out if you are in the market for a CLI tool for code-generation)
+## Architecture
 
-## Getting Started
-1. Ensure you are using Rust 1.73
-2. Build the binary: `cargo build --bin webserver`
-3. Run the binary: `./target/debug/webserver`
-4. Profit!
+Sidecar consists of several key components:
 
-## Bonus on how to get your Aide editor to talk to Sidecar:
+### Core Components
+- `tool_box.rs` - Collection of language-specific tools and utilities
+- `symbol/` - Smart symbol management from file to function level
+- `llm_prompts/` - LLM integration and prompt management
+- `repomap/` - Repository mapping using PageRank on code symbols
+
+### Additional Components
+- `webserver/` - API endpoints and WebSocket communication
+- `chunking/` - Code analysis and segmentation
+- `git/` - Version control integration
+- `agentic/` - AI agent implementation
+
+## Features
+
+1. **Code Intelligence**
+   - Smart code completion
+   - Symbol analysis and navigation
+   - Context-aware suggestions
+   - Multi-language support
+
+2. **Repository Analysis**
+   - Code structure mapping
+   - Dependency tracking
+   - Symbol relationship analysis
+   - Intelligent code navigation
+
+3. **AI Integration**
+   - Multiple LLM provider support
+   - Customizable prompts
+   - Context-aware responses
+   - Efficient token management
+
+## Quick Start
+
+1. **Prerequisites**
+   ```bash
+   # Ensure Rust 1.73
+   rustup default 1.73
+   
+   # Clone repository
+   git clone https://github.com/codestoryai/sidecar.git
+   cd sidecar
+   ```
+
+2. **Build and Run**
+   ```bash
+   # Build the binary
+   cargo build --bin webserver
+   
+   # Run Sidecar
+   ./target/debug/webserver
+   ```
+
+3. **Configuration**
+   - Copy `.env.example` to `.env`
+   - Set required API keys
+   - Configure model preferences
+
+## Integration with Aide Editor
+
 1. Run the Aide production build or build from source using [this](https://github.com/codestoryai/ide)
 2. Run the sidecar binary
-3. Since you have a sidecar binary already running, the editor will prefer to use this over starting its own process.
-4. Congratulations! You are now running sidecar for Aide locally with your own built binary.
+3. Since you have a sidecar binary already running, the editor will prefer to use this over starting its own process
+4. Your Aide editor is now using your local Sidecar instance!
+
+## Documentation
+
+- [Standalone Sidecar Guide](standalone-sidecar.md) - Build standalone version
+- [Settings Guide](sidecar-settings.md) - Configure models and preferences
+- [API Documentation](api-documentation.md) - REST and WebSocket APIs
+- [Development Guide](development-guide.md) - Development workflow
+- [Testing Guide](testing-guide.md) - Testing practices
+- [Deployment Guide](deployment-guide.md) - Deployment options
 
 ## Contributing
 
