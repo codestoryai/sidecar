@@ -60,6 +60,7 @@ use super::{
     rerank::base::ReRankEntriesForBroker,
     reward::client::RewardGenerationResponse,
     session::{
+        ask_expert::AskExpertResponse,
         ask_followup_question::AskFollowupQuestionsResponse,
         attempt_completion::AttemptCompletionClientResponse, chat::SessionChatClientResponse,
         exchange::SessionExchangeNewResponse, hot_streak::SessionHotStreakResponse,
@@ -235,6 +236,8 @@ pub enum ToolOutput {
     FindFiles(FindFilesResponse),
     // Request screenshot output
     RequestScreenshot(RequestScreenshotOutput),
+    // Ask expert response
+    AskExpert(AskExpertResponse),
     // dynamically configured MCP servers
     McpTool(McpToolResponse),
 }
@@ -390,6 +393,9 @@ impl ToolOutput {
 
     pub fn go_to_reference(refernece: GoToReferencesResponse) -> Self {
         ToolOutput::GoToReference(refernece)
+    }
+    pub fn ask_expert(response: AskExpertResponse) -> Self {
+        ToolOutput::AskExpert(response)
     }
 
     pub fn code_correctness_action(output: CodeCorrectnessAction) -> Self {

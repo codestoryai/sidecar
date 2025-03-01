@@ -787,6 +787,7 @@ Output:
                 }
             }
             ToolInputPartial::RequestScreenshot(_) => Err(InferenceError::WrongToolOutput),
+            ToolInputPartial::AskExpert(_) => Err(InferenceError::WrongToolOutput),
         }
     }
 }
