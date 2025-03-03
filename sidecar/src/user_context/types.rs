@@ -787,9 +787,7 @@ impl UserContext {
             })
             .collect::<Vec<_>>();
 
-        // No need to compress images here as they were compressed when added
-        let processed_new_images = new_user_context.images;
-        new_user_context.images = processed_new_images;
+        // No need to process images here as they were compressed when added
 
         let images_to_extend = self
             .images
