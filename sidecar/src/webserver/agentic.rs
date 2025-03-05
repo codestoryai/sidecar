@@ -40,6 +40,7 @@ use crate::chunking::text_document::Range;
 use crate::repo::types::RepoRef;
 use crate::webserver::plan::{
     check_plan_storage_path, check_scratch_pad_path, plan_storage_directory,
+use crate::webserver::message_moderation;
 };
 use crate::{application::application::Application, user_context::types::UserContext};
 
@@ -1176,6 +1177,26 @@ pub async fn agent_session_chat(
         "webserver::agent_session::chat::session_id({})",
         &session_id
     );
+    
+    // Check if the message contains inappropriate content
+    let original_query = query.clone();
+    let query = if message_moderation::contains_inappropriate_content(&query) {
+        println!("Filtering inappropriate content in message");
+        // If the message should be blocked entirely, replace it with a warning
+        if message_moderation::should_block_message(&query) {
+            "Your message was blocked due to inappropriate content. Please maintain professional communication.".to_string()
+        } else {
+            // Otherwise, filter out the inappropriate words
+            message_moderation::filter_inappropriate_content(&query)
+        }
+    } else {
+        query
+    };
+
+    // Log if the message was modified
+    if original_query != query {
+        println!("Message was modified due to inappropriate content");
+    }
     let cancellation_token = tokio_util::sync::CancellationToken::new();
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
     let message_properties = SymbolEventMessageProperties::new(
@@ -1710,6 +1731,25 @@ pub async fn agent_tool_use(
         || whoami::username() == "root".to_owned()
         || std::env::var("SIDECAR_ENABLE_REASONING").map_or(false, |v| !v.is_empty())
     {
+    // Check if the message contains inappropriate content
+    let original_query = query.clone();
+    let query = if message_moderation::contains_inappropriate_content(&query) {
+        println!("Filtering inappropriate content in message");
+        // If the message should be blocked entirely, replace it with a warning
+        if message_moderation::should_block_message(&query) {
+            "Your message was blocked due to inappropriate content. Please maintain professional communication.".to_string()
+        } else {
+            // Otherwise, filter out the inappropriate words
+            message_moderation::filter_inappropriate_content(&query)
+        }
+    } else {
+        query
+    };
+
+    // Log if the message was modified
+    if original_query != query {
+        println!("Message was modified due to inappropriate content");
+    }
         reasoning
     } else {
         // gate hard for now before we push a new verwsion of the editor
