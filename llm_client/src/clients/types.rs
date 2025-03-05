@@ -719,7 +719,12 @@ impl LLMClientCompletionStringRequest {
             frequency_penalty,
             stop_words: None,
             max_tokens: None,
+            thinking_budget: None,
         }
+    }
+
+    pub fn thinking_budget(&self) -> Option<usize> {
+        self.thinking_budget
     }
 
     pub fn set_stop_words(mut self, stop_words: Vec<String>) -> Self {
@@ -755,6 +760,11 @@ impl LLMClientCompletionStringRequest {
     pub fn get_max_tokens(&self) -> Option<usize> {
         self.max_tokens
     }
+
+    pub fn set_thinking_budget(mut self, thinking_budget: usize) -> Self {
+        self.thinking_budget = Some(thinking_budget);
+        self
+    }
 }
 
 impl LLMClientCompletionRequest {
@@ -771,6 +781,7 @@ impl LLMClientCompletionRequest {
             frequency_penalty,
             stop_words: None,
             max_tokens: None,
+            thinking_budget: None,
         }
     }
 
@@ -1047,7 +1058,32 @@ pub trait LLMClient {
 
 #[cfg(test)]
 mod tests {
-    use super::LLMType;
+    use super::*;
+
+    #[test]
+    fn test_thinking_budget() {
+        let request = LLMClientCompletionRequest::new(
+            LLMType::ClaudeSonnet,
+            vec![LLMClientMessage::user("test".to_string())],
+            0.7,
+            None,
+        );
+        assert_eq!(request.thinking_budget(), None);
+
+        let request = request.set_thinking_budget(16000);
+        assert_eq!(request.thinking_budget(), Some(16000));
+
+        let string_request = LLMClientCompletionStringRequest::new(
+            LLMType::ClaudeSonnet,
+            "test".to_string(),
+            0.7,
+            None,
+        );
+        assert_eq!(string_request.thinking_budget(), None);
+
+        let string_request = string_request.set_thinking_budget(16000);
+        assert_eq!(string_request.thinking_budget(), Some(16000));
+    }
 
     #[test]
     fn test_llm_type_from_string() {
