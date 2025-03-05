@@ -4,6 +4,7 @@ members = [
     "llm_client",
     "llm_prompts",
     "logging",
+    "agent_repl",
 ]
 resolver = "2"
 
