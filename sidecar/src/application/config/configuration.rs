@@ -79,6 +79,42 @@ impl Configuration {
     pub fn scratch_pad(&self) -> PathBuf {
         self.index_dir.join("scratch_pad")
     }
+
+    pub fn models_config_path(&self) -> Option<PathBuf> {
+        self.model_config_path.clone().or_else(|| {
+            self.index_dir.join("models_config.json").exists().then(|| {
+                self.index_dir.join("models_config.json")
+            })
+        })
+    }
+
+    pub async fn load_model_config(&mut self) -> anyhow::Result<()> {
+        if let Some(path) = self.models_config_path() {
+            if path.exists() {
+                let content = tokio::fs::read_to_string(path).await?;
+                self.model_configuration = Some(serde_json::from_str(&content)?);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn lsp_config_path(&self) -> Option<PathBuf> {
+        self.lsp_config_path.clone().or_else(|| {
+            self.index_dir.join("lsp_config.json").exists().then(|| {
+                self.index_dir.join("lsp_config.json")
+            })
+        })
+    }
+
+    pub async fn load_lsp_config(&mut self) -> anyhow::Result<()> {
+        if let Some(path) = self.lsp_config_path() {
+            if path.exists() {
+                let content = tokio::fs::read_to_string(path).await?;
+                self.lsp_configuration = Some(serde_json::from_str(&content)?);
+            }
+        }
+        Ok(())
+    }
 }
 
 fn default_index_dir() -> PathBuf {

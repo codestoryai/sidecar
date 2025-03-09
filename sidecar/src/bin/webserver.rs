@@ -143,7 +143,6 @@ pub async fn start(app: Application) -> anyhow::Result<()> {
     let protected_routes = Router::new()
         .nest("/agentic", agentic_router())
         .nest("/plan", plan_router());
-    // .layer(from_fn(auth_middleware)); // routes through middleware
 
     // no middleware check
     let public_routes = Router::new()
@@ -161,13 +160,16 @@ pub async fn start(app: Application) -> anyhow::Result<()> {
 
     api = api.route("/health", get(sidecar::webserver::health::health));
 
+    // Create the router with application state
+    let router = sidecar::webserver::create_router(app.clone()).await?;
+    
     let api = api
+        .merge(router)
         .layer(Extension(app.clone()))
         .with_state(app.clone())
         .with_state(app.clone())
         .layer(CorsLayer::permissive())
         .layer(CatchPanicLayer::new())
-        // I want to set the bytes limit here to 20 MB
         .layer(DefaultBodyLimit::max(20 * 1024 * 1024));
 
     let router = Router::new().nest("/api", api);
