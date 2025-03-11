@@ -46,7 +46,7 @@ impl CodeEditorParameters {
     pub fn to_json() -> serde_json::Value {
         serde_json::json!({
             "name": "str_replace_editor",
-            "type": "text_editor_20241022",
+            "type": "text_editor_20250124",
         })
     }
 
