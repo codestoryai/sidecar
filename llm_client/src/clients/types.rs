@@ -693,6 +693,7 @@ pub struct LLMClientCompletionRequest {
     frequency_penalty: Option<f32>,
     stop_words: Option<Vec<String>>,
     max_tokens: Option<usize>,
+    thinking_budget: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -703,6 +704,7 @@ pub struct LLMClientCompletionStringRequest {
     frequency_penalty: Option<f32>,
     stop_words: Option<Vec<String>>,
     max_tokens: Option<usize>,
+    thinking_budget: Option<usize>,
 }
 
 impl LLMClientCompletionStringRequest {
@@ -719,6 +721,7 @@ impl LLMClientCompletionStringRequest {
             frequency_penalty,
             stop_words: None,
             max_tokens: None,
+            thinking_budget: None,
         }
     }
 
@@ -755,6 +758,15 @@ impl LLMClientCompletionStringRequest {
     pub fn get_max_tokens(&self) -> Option<usize> {
         self.max_tokens
     }
+
+    pub fn set_thinking_budget(mut self, thinking_budget: usize) -> Self {
+        self.thinking_budget = Some(thinking_budget);
+        self
+    }
+
+    pub fn thinking_budget(&self) -> Option<usize> {
+        self.thinking_budget
+    }
 }
 
 impl LLMClientCompletionRequest {
@@ -771,6 +783,7 @@ impl LLMClientCompletionRequest {
             frequency_penalty,
             stop_words: None,
             max_tokens: None,
+            thinking_budget: None,
         }
     }
 
@@ -858,6 +871,15 @@ impl LLMClientCompletionRequest {
 
     pub fn get_max_tokens(&self) -> Option<usize> {
         self.max_tokens
+    }
+
+    pub fn set_thinking_budget(mut self, thinking_budget: usize) -> Self {
+        self.thinking_budget = Some(thinking_budget);
+        self
+    }
+
+    pub fn thinking_budget(&self) -> Option<usize> {
+        self.thinking_budget
     }
 }
 
