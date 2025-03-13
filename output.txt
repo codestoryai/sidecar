@@ -1,0 +1,84 @@
+# String Replace Editing Documentation
+
+## Overview
+The str_replace editing functionality in the agent_farm codebase provides a way to perform precise text replacements in files. It is implemented as part of the code editor tool and ensures safe and accurate file modifications.
+
+## Key Components
+
+1. Code Editor Parameters (sidecar/src/agentic/tool/code_edit/code_editor.rs)
+   - EditorCommand enum defines available commands including `StrReplace`
+   - CodeEditorParameters struct handles parameters:
+     - old_str: The exact string to be replaced
+     - new_str: The replacement string
+     - path: Target file path
+
+2. Implementation (sidecar/src/mcts/editor/anthropic_computer.rs)
+   The str_replace functionality includes several safety checks:
+   - Validates file existence and accessibility
+   - Ensures exactly one occurrence of the target string
+   - Creates parent directories if needed
+   - Provides feedback about the changes made
+
+## Usage Rules
+
+1. Exact Matching:
+   - The old_str parameter must match EXACTLY one or more consecutive lines
+   - Whitespace is significant and must match precisely
+   - Multiple occurrences of the target string will result in an error
+
+2. Error Handling:
+   - Returns error if file doesn't exist
+   - Returns error if old_str not found
+   - Returns error with line numbers if multiple matches found
+   - Creates parent directories automatically if needed
+
+## Example Usage
+
+The str_replace editor is used through a structured command format:
+
+```xml
+<str_replace_editor>
+<command>
+str_replace
+</command>
+<path>
+/path/to/file
+</path>
+<old_str>
+exact text to replace
+</old_str>
+<new_str>
+replacement text
+</new_str>
+</str_replace_editor>
+```
+
+## Implementation Details
+
+1. String Replacement Process:
+   - Reads entire file content
+   - Counts occurrences of old_str
+   - Verifies single occurrence
+   - Performs replacement
+   - Writes back to file
+   - Shows snippet of changes
+
+2. Safety Features:
+   - Directory creation: Creates missing parent directories
+   - Validation: Checks file existence and accessibility
+   - Feedback: Provides context around changes
+   - Error prevention: Stops on multiple matches
+
+3. Code Location:
+   Main implementation: sidecar/src/mcts/editor/anthropic_computer.rs
+   Parameter definitions: sidecar/src/agentic/tool/code_edit/code_editor.rs
+
+## Best Practices
+
+1. Always verify the exact string to replace
+2. Include sufficient context in the old_str
+3. Check the tool's response for any errors
+4. Review the snippet of changes provided
+5. Use view command first to verify the target text
+
+This documentation provides a comprehensive overview of the str_replace editing functionality, its implementation, and usage guidelines.
