@@ -7,6 +7,7 @@ use crate::agentic::tool::{
     input::ToolInput,
     output::ToolOutput,
     r#type::{Tool, ToolRewardScale},
+    git::operation_id::extract_operation_id,
 };
 use async_trait::async_trait;
 use logging::new_client;
@@ -32,6 +33,8 @@ pub struct EditedGitDiffFile {
     diff: String,
     current_content: String,
     updated_timestamp_ms: i64,
+    #[serde(default)]
+    operation_id: Option<String>,
 }
 
 impl EditedGitDiffFile {
@@ -50,16 +53,57 @@ impl EditedGitDiffFile {
     pub fn current_content(&self) -> &str {
         &self.current_content
     }
+    
+    pub fn operation_id(&self) -> Option<&str> {
+        self.operation_id.as_deref()
+    }
+    
+    /// Tries to extract operation ID from diff or current content if not already set
+    pub fn extract_operation_id(&mut self) {
+        if self.operation_id.is_none() {
+            self.operation_id = extract_operation_id(&self.diff)
+                .or_else(|| extract_operation_id(&self.current_content));
+        }
+    }
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct EditedFilesResponse {
     changed_files: Vec<EditedGitDiffFile>,
+    #[serde(default)]
+    operation_id: Option<String>,
 }
 
 impl EditedFilesResponse {
-    pub fn changed_files(self) -> Vec<EditedGitDiffFile> {
+    pub fn changed_files(mut self) -> Vec<EditedGitDiffFile> {
+        // Extract operation IDs from files if not already set
+        for file in &mut self.changed_files {
+            file.extract_operation_id();
+        }
         self.changed_files
+    }
+    
+    pub fn operation_id(&self) -> Option<&str> {
+        self.operation_id.as_deref()
+    }
+    
+    /// Tries to find an operation ID from any of the changed files
+    pub fn extract_operation_id(&mut self) -> Option<String> {
+        // First check if we already have an operation ID
+        if let Some(id) = &self.operation_id {
+            return Some(id.clone());
+        }
+        
+        // Try to extract from any of the changed files
+        for file in &mut self.changed_files {
+            file.extract_operation_id();
+            if let Some(id) = file.operation_id() {
+                self.operation_id = Some(id.to_string());
+                return self.operation_id.clone();
+            }
+        }
+        
+        None
     }
 }
 
@@ -87,10 +131,14 @@ impl Tool for EditedFiles {
             .send()
             .await
             .map_err(|_e| ToolError::ErrorCommunicatingWithEditor)?;
-        let response: EditedFilesResponse = response.json().await.map_err(|e| {
+        let mut response: EditedFilesResponse = response.json().await.map_err(|e| {
             eprintln!("edited_files::{:?}", &e);
             ToolError::SerdeConversionFailed
         })?;
+        
+        // Try to extract operation ID if not already set
+        response.extract_operation_id();
+        
         Ok(ToolOutput::edited_files(response))
     }
 

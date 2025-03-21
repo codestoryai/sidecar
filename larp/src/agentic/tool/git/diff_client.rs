@@ -12,6 +12,7 @@ use tokio::process::Command;
 
 use crate::agentic::tool::r#type::ToolRewardScale;
 use crate::agentic::tool::{errors::ToolError, input::ToolInput, output::ToolOutput, r#type::Tool};
+use crate::agentic::tool::git::operation_id::extract_operation_id;
 use async_trait::async_trait;
 
 // TODO(skcd): We want to talk to the editor to get the git-diff of the recently
@@ -59,6 +60,7 @@ pub struct GitDiffClientResponse {
     fs_file_path: String,
     old_version: String,
     new_version: String,
+    operation_id: Option<String>,
 }
 
 impl GitDiffClientResponse {
@@ -68,6 +70,10 @@ impl GitDiffClientResponse {
 
     pub fn new_version(&self) -> &str {
         &self.new_version
+    }
+    
+    pub fn operation_id(&self) -> Option<&str> {
+        self.operation_id.as_deref()
     }
 }
 
@@ -120,6 +126,9 @@ async fn run_command(
     }
 
     if !expanded {
+        // Try to extract operation ID from the git diff output
+        let operation_id = extract_operation_id(&output);
+        
         return Ok(GitDiffClientResponse {
             fs_file_path: "".to_owned(),
             old_version: "".to_owned(),
@@ -127,6 +136,7 @@ async fn run_command(
             // feeling too lazy to create a new tool so this is implict understood
             // behavior
             new_version: output,
+            operation_id,
         });
     }
 
@@ -192,11 +202,16 @@ fn parse_git_diff_output_full_length(
         // we start after the diff git -- and index {crap} lines
         let slice_limits = &git_diff_lines[idx + 2..=section_limit];
         let (old_version, new_version) = extract_versions(slice_limits);
+        
+        // Extract operation ID from the content (try both old and new versions)
+        let operation_id = extract_operation_id(&old_version)
+            .or_else(|| extract_operation_id(&new_version));
 
         diff_outputs.push(GitDiffClientResponse {
             fs_file_path: joined_path_str.to_owned(),
             old_version,
             new_version,
+            operation_id,
         });
         idx = section_limit;
     }

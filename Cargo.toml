@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "sidecar",
+    "larp",
     "llm_client",
     "llm_prompts",
     "logging",

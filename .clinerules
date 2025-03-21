@@ -1,0 +1,541 @@
+# LARP .clinerules
+
+This file provides guidance for AI assistants working with the LARP codebase. It contains repository-specific patterns, conventions, and development processes to ensure generated code integrates seamlessly with the existing codebase.
+
+## Repository Structure
+
+LARP is organized as a Rust workspace with multiple crates, each with a specific responsibility:
+
+```
+larp/                  # Main crate with core functionality
+llm_client/            # LLM communication and provider integration
+llm_prompts/           # Prompt generation and formatting
+logging/               # Logging utilities
+```
+
+When working with this repository:
+- Keep functionality in its appropriate crate
+- Maintain the existing module structure
+- Follow the established dependency hierarchy
+
+## Module Architecture
+
+### larp (Main Crate)
+
+The main crate contains these key modules:
+
+```
+larp/src/
+├── agent/             # Base agent functionality
+├── agentic/           # Advanced agentic system
+│   ├── memory/        # Memory management for agents
+│   ├── symbol/        # Symbol management and tracking
+│   └── tool/          # Tool implementations
+├── application/       # Application core and configuration
+├── chunking/          # Code parsing and chunking
+├── git/               # Git integration
+├── mcts/              # Monte Carlo Tree Search decision engine
+├── repo/              # Repository management
+├── repomap/           # Repository mapping and analysis
+├── webserver/         # API endpoints
+```
+
+### llm_client (LLM Communication)
+
+```
+llm_client/src/
+├── clients/           # Provider-specific clients
+├── format/            # Request/response formatting
+├── tokenizer/         # Token counting and management
+```
+
+### llm_prompts (Prompt Generation)
+
+```
+llm_prompts/src/
+├── chat/              # Chat prompt generation
+├── fim/               # Fill-in-middle prompt generation
+├── in_line_edit/      # Inline editing prompt generation
+├── reranking/         # Result reranking prompts
+```
+
+## Coding Patterns
+
+### 1. Broker Pattern
+
+The codebase uses a broker pattern extensively for managing multiple implementations:
+
+```rust
+// Example broker pattern
+pub struct LLMBroker {
+    clients: Arc<DashMap<LLMType, Box<dyn LLMClient>>>,
+}
+
+impl LLMBroker {
+    pub async fn new() -> anyhow::Result<Self> {
+        let clients = Arc::new(DashMap::new());
+        // Register clients
+        Ok(Self { clients })
+    }
+    
+    pub fn get_client(&self, llm_type: LLMType) -> Option<impl LLMClient> {
+        // Get appropriate client
+    }
+}
+```
+
+When adding new functionality that requires multiple implementations:
+- Create a trait defining the interface
+- Implement the trait for each specific case
+- Create a broker that manages instances and routes requests
+
+### 2. Error Handling
+
+The project uses a combination of `anyhow` for general error handling and `thiserror` for defining specific error types:
+
+```rust
+// For library functions that need to define error types:
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum MyError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    
+    #[error("Invalid value: {0}")]
+    InvalidValue(String),
+}
+
+// For application code, use anyhow:
+use anyhow::{Result, Context};
+
+fn do_something() -> Result<()> {
+    let file = std::fs::File::open("file.txt")
+        .context("Failed to open file.txt")?;
+    // More code...
+    Ok(())
+}
+```
+
+### 3. Asynchronous Programming
+
+The codebase uses Tokio for asynchronous operations:
+
+```rust
+// Async function pattern
+pub async fn process_request(&self, request: Request) -> Result<Response> {
+    // Asynchronous operations
+    let result = self.llm_client.generate_text(request.prompt).await?;
+    // Process result
+    Ok(Response { result })
+}
+```
+
+When implementing new functionality:
+- Use `async`/`await` for I/O operations
+- Leverage Tokio's utilities for concurrent processing
+- Consider using `tokio::spawn` for background tasks
+
+### 4. Arc/Clone Pattern
+
+The codebase extensively uses `Arc` for shared ownership:
+
+```rust
+// Arc pattern for shared components
+pub struct Application {
+    config: Arc<Configuration>,
+    llm_broker: Arc<LLMBroker>,
+    // Other fields
+}
+
+impl Application {
+    pub fn new() -> Self {
+        let config = Arc::new(Configuration::default());
+        let llm_broker = Arc::new(LLMBroker::new().await?);
+        Self { config, llm_broker }
+    }
+}
+```
+
+When designing new components:
+- Use `Arc` for shared ownership across threads
+- Implement `Clone` for types that need to be shared
+- Consider using interior mutability patterns like `Mutex` or `RwLock` when shared mutable access is needed
+
+## LLM Integration
+
+### Adding a New LLM Provider
+
+1. Create a new client file in `llm_client/src/clients/`
+2. Implement the `LLMClient` trait
+3. Add the provider to the `LLMType` enum in `llm_client/src/clients/types.rs`
+4. Register the provider in `LLMBroker::new()`
+
+Example pattern:
+
+```rust
+// In llm_client/src/clients/new_provider.rs
+pub struct NewProviderClient {
+    api_key: String,
+    client: reqwest::Client,
+}
+
+impl NewProviderClient {
+    pub fn new(api_key: String) -> Self {
+        Self {
+            api_key,
+            client: reqwest::Client::new(),
+        }
+    }
+}
+
+#[async_trait]
+impl LLMClient for NewProviderClient {
+    async fn generate_text(&self, prompt: &str) -> Result<String> {
+        // Implementation
+    }
+    
+    async fn generate_chat_completion(&self, messages: &[ChatMessage]) -> Result<String> {
+        // Implementation
+    }
+}
+
+// In llm_client/src/clients/types.rs
+pub enum LLMType {
+    // Existing types
+    NewProvider,
+}
+
+// In llm_client/src/broker.rs
+impl LLMBroker {
+    pub async fn new() -> Result<Self> {
+        let clients = Arc::new(DashMap::new());
+        
+        // Register existing clients
+        
+        // Register new client
+        clients.insert(
+            LLMType::NewProvider,
+            Box::new(NewProviderClient::new(get_api_key()?)) as Box<dyn LLMClient>,
+        );
+        
+        Ok(Self { clients })
+    }
+}
+```
+
+## Tree-sitter Integration
+
+### Adding a New Language Parser
+
+1. Add the tree-sitter grammar dependency to `larp/Cargo.toml`
+2. Create a new file in `larp/src/chunking/` for your language
+3. Implement the parsing logic for your language
+4. Register your language in `larp/src/chunking/languages.rs`
+
+Example pattern:
+
+```rust
+// In larp/src/chunking/new_language.rs
+pub fn parse_new_language(source: &str) -> Result<Vec<CodeChunk>> {
+    let mut parser = Parser::new();
+    let language = tree_sitter_new_language();
+    parser.set_language(language)?;
+    
+    let tree = parser.parse(source, None)?;
+    let root_node = tree.root_node();
+    
+    let mut chunks = Vec::new();
+    extract_chunks(root_node, source, &mut chunks)?;
+    
+    Ok(chunks)
+}
+
+// In larp/src/chunking/languages.rs
+pub fn get_parser_for_language(language: &str) -> Option<ParserFn> {
+    match language {
+        // Existing languages
+        "new_language" => Some(parse_new_language),
+        _ => None,
+    }
+}
+```
+
+## Agentic System
+
+### Adding a New Tool
+
+1. Create a new file in `larp/src/agentic/tool/` for your tool
+2. Implement the `Tool` trait for your tool
+3. Register your tool in the `ToolBox::new()` method
+
+Example pattern:
+
+```rust
+// In larp/src/agentic/tool/new_tool.rs
+pub struct NewTool {
+    // Tool state
+}
+
+impl NewTool {
+    pub fn new() -> Self {
+        Self { /* initialize state */ }
+    }
+}
+
+#[async_trait]
+impl Tool for NewTool {
+    async fn execute(&self, params: ToolParams) -> Result<ToolResult> {
+        // Tool implementation
+        Ok(ToolResult::new(/* result data */))
+    }
+    
+    fn name(&self) -> &'static str {
+        "new_tool"
+    }
+    
+    fn description(&self) -> &'static str {
+        "Description of the new tool"
+    }
+}
+
+// In larp/src/agentic/tool_box.rs
+impl ToolBox {
+    pub fn new(
+        tool_broker: Arc<ToolBroker>,
+        symbol_tracker: Arc<SymbolTrackerInline>,
+        editor_parsing: Arc<EditorParsing>,
+    ) -> Self {
+        let mut tools = HashMap::new();
+        
+        // Register existing tools
+        
+        // Register new tool
+        tools.insert(
+            "new_tool".to_string(),
+            Box::new(NewTool::new()) as Box<dyn Tool>,
+        );
+        
+        Self { tools, tool_broker, symbol_tracker, editor_parsing }
+    }
+}
+```
+
+## Testing Guidelines
+
+### Unit Tests
+
+Write unit tests in the same file as the code they're testing:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_functionality() {
+        // Test code
+        assert_eq!(function_under_test(input), expected_output);
+    }
+}
+```
+
+### Integration Tests
+
+For integration tests, create files in the `tests/` directory:
+
+```rust
+// In tests/integration_test.rs
+use larp::{Component, AnotherComponent};
+
+#[tokio::test]
+async fn test_component_interaction() {
+    let component = Component::new();
+    let another = AnotherComponent::new();
+    
+    let result = component.interact_with(another).await;
+    assert!(result.is_ok());
+}
+```
+
+## Documentation
+
+### Function Documentation
+
+Document public functions with rustdoc comments:
+
+```rust
+/// This function processes a request and returns a response.
+///
+/// # Arguments
+///
+/// * `request` - The request to process
+///
+/// # Returns
+///
+/// A result containing the response or an error
+///
+/// # Errors
+///
+/// Returns an error if the request is invalid or processing fails
+///
+/// # Examples
+///
+/// ```
+/// let response = process_request(request).await?;
+/// ```
+pub async fn process_request(request: Request) -> Result<Response> {
+    // Implementation
+}
+```
+
+### Module Documentation
+
+Document modules with module-level comments:
+
+```rust
+//! This module provides functionality for processing requests.
+//!
+//! It includes functions for validating, transforming, and responding to requests.
+
+pub mod validation;
+pub mod transformation;
+pub mod response;
+```
+
+## Common Development Tasks
+
+### Adding a New Feature
+
+1. Create a new branch: `git checkout -b feature/feature-name`
+2. Implement the feature
+3. Add tests
+4. Update documentation
+5. Submit a pull request
+
+### Debugging
+
+Use the tracing macros for debugging:
+
+```rust
+use tracing::{trace, debug, info, warn, error};
+
+// Levels from most to least verbose
+trace!("Very detailed information");
+debug!("Useful for debugging");
+info!("General information");
+warn!("Warning that might need attention");
+error!("Error that needs immediate attention");
+```
+
+Set the log level using the `RUST_LOG` environment variable:
+
+```bash
+RUST_LOG=debug cargo run --bin webserver
+```
+
+## Performance Considerations
+
+### Token Optimization
+
+When working with LLMs, optimize token usage:
+
+- Remove unnecessary whitespace and formatting
+- Use targeted context pruning
+- Cache frequently used prompts and responses
+
+### Caching
+
+Use caching where appropriate:
+
+```rust
+// Example of a simple cache
+struct Cache<K, V> {
+    data: Arc<DashMap<K, (V, Instant)>>,
+    ttl: Duration,
+}
+
+impl<K: Hash + Eq, V: Clone> Cache<K, V> {
+    fn new(ttl: Duration) -> Self {
+        Self {
+            data: Arc::new(DashMap::new()),
+            ttl,
+        }
+    }
+    
+    fn get(&self, key: &K) -> Option<V> {
+        if let Some(entry) = self.data.get(key) {
+            let (value, timestamp) = entry.value();
+            if timestamp.elapsed() < self.ttl {
+                return Some(value.clone());
+            }
+        }
+        None
+    }
+    
+    fn insert(&self, key: K, value: V) {
+        self.data.insert(key, (value, Instant::now()));
+    }
+}
+```
+
+### Parallel Processing
+
+Use Rayon for CPU-bound parallel processing:
+
+```rust
+use rayon::prelude::*;
+
+// Sequential processing
+let results: Vec<_> = items.iter().map(|item| process_item(item)).collect();
+
+// Parallel processing
+let results: Vec<_> = items.par_iter().map(|item| process_item(item)).collect();
+```
+
+## Git Workflow
+
+### Commit Messages
+
+Format commit messages with a clear title and detailed description:
+
+```
+feat: Add support for new LLM provider
+
+- Implement client for new provider
+- Add provider to LLMType enum
+- Register provider in LLMBroker
+- Add tests for the new provider
+```
+
+Use prefixes like:
+- `feat:` for new features
+- `fix:` for bug fixes
+- `docs:` for documentation changes
+- `refactor:` for code refactoring
+- `test:` for adding or updating tests
+- `chore:` for maintenance tasks
+
+### Branch Naming
+
+Name branches according to their purpose:
+- `feature/feature-name` for new features
+- `bugfix/issue-description` for bug fixes
+- `refactor/component-name` for code refactoring
+- `docs/documentation-description` for documentation updates
+
+## Security Considerations
+
+### API Key Management
+
+Handle API keys securely:
+- Never hardcode API keys
+- Use environment variables or secure configuration files
+- Log errors without exposing sensitive information
+
+### Input Validation
+
+Validate all inputs, especially those from external sources:
+- Check for malicious input patterns
+- Validate file paths to prevent path traversal
+- Sanitize inputs before using them in commands or queries

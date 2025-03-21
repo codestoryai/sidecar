@@ -92,6 +92,9 @@ pub enum ToolError {
     #[error("Cancelled by user")]
     UserCancellation,
 
+    #[error("No operation ID found for this PR. Please include an operation ID in the PR title or description.")]
+    MissingOperationID,
+
     #[error("Invalid input: {0}")]
     InvalidInput(String),
 

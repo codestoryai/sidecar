@@ -4,7 +4,7 @@ set -e
 cargo build --bin state
 
 export BINARY_VERSION_HASH=$(./target/debug/state)
-export CARGO_PKG_VERSION=$(grep -m1 '^version = ' sidecar/Cargo.toml | cut -d '"' -f2)
+export CARGO_PKG_VERSION=$(grep -m1 '^version = ' larp/Cargo.toml | cut -d '"' -f2)
 
 if [[ -z "${GH_TOKEN}" ]] && [[ -z "${GITHUB_TOKEN}" ]] && [[ -z "${GH_ENTERPRISE_TOKEN}" ]] && [[ -z "${GITHUB_ENTERPRISE_TOKEN}" ]]; then
   echo "Will not update version JSON because no GITHUB_TOKEN defined"
@@ -74,7 +74,7 @@ git remote rm origin
 git remote add origin "https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@${GH_HOST}/${VERSIONS_REPOSITORY}.git" &> /dev/null
 
 # update latest.json
-VERSION_PATH="sidecar/${OS_NAME}/${ARCH}"
+VERSION_PATH="larp/${OS_NAME}/${ARCH}"
 updateLatestVersion
 
 git pull origin main # in case another build just pushed

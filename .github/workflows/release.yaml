@@ -1,4 +1,4 @@
-name: Build & release sidecar
+name: Build & release larp
 
 on:
   workflow_dispatch:
@@ -166,9 +166,9 @@ jobs:
         # Create zip file
         Push-Location staging
         if ($env:RUNNER_OS -eq "Windows") {
-          Compress-Archive -Path * -DestinationPath ../sidecar.zip -Force
+          Compress-Archive -Path * -DestinationPath ../larp.zip -Force
         } else {
-          zip -r ../sidecar.zip .
+          zip -r ../larp.zip .
         }
         Pop-Location
 
@@ -211,16 +211,16 @@ jobs:
         echo "ARCH: ${ARCH}"
         echo "CARGO_PKG_VERSION: ${CARGO_PKG_VERSION}"
 
-        SPECIFIC_VERSION_PATH="${CARGO_PKG_VERSION}/${OS_NAME}/${ARCH}/sidecar.zip"
-        LATEST_VERSION_PATH="latest/${OS_NAME}/${ARCH}/sidecar.zip"
+        SPECIFIC_VERSION_PATH="${CARGO_PKG_VERSION}/${OS_NAME}/${ARCH}/larp.zip"
+        LATEST_VERSION_PATH="latest/${OS_NAME}/${ARCH}/larp.zip"
 
         echo "Paths:"
         echo "SPECIFIC_VERSION_PATH: ${SPECIFIC_VERSION_PATH}"
         echo "LATEST_VERSION_PATH: ${LATEST_VERSION_PATH}"
 
         # Verify file exists
-        ls -l "./sidecar.zip"
+        ls -l "./larp.zip"
 
         # Copy with verbose flag
-        gsutil cp "./sidecar.zip" "gs://sidecar-bin/${SPECIFIC_VERSION_PATH}"
-        gsutil cp "./sidecar.zip" "gs://sidecar-bin/${LATEST_VERSION_PATH}"
+        gsutil cp "./larp.zip" "gs://larp-bin/${SPECIFIC_VERSION_PATH}"
+        gsutil cp "./larp.zip" "gs://larp-bin/${LATEST_VERSION_PATH}"

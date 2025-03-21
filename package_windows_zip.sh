@@ -4,4 +4,4 @@
 # https://medium.com/@mr.pankajbahekar/cross-comiple-rust-binaries-on-mac-m1-a252e3a8925e
 
 cargo build --target=x86_64-pc-windows-gnu --verbose --release
-zip -r sidecar target/x86_64-pc-windows-gnu/release/webserver.exe
+zip -r larp target/x86_64-pc-windows-gnu/release/webserver.exe

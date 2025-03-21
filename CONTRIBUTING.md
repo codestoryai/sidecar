@@ -1,12 +1,12 @@
-# Contributing to Sidecar
+# Contributing to LARP
 
-Welcome, and thank you for your interest in contributing to Sidecar!
+Welcome, and thank you for your interest in contributing to LARP!
 
 There are several ways in which you can contribute, beyond writing code. The goal of this document is to provide a high-level overview of how you can get involved.
 
 ## Contributing Fixes
 
-If you are interested in writing code to fix issues, please see [How to Contribute](https://github.com/codestoryai/sidecar/blob/main/HOW_TO_CONTRIBUTE.md.md).
+If you are interested in writing code to fix issues, please see [How to Contribute](https://github.com/codestoryai/larp/blob/main/HOW_TO_CONTRIBUTE.md.md).
 
 ## Asking Questions
 
@@ -17,7 +17,7 @@ Have a question? The [Aide Discord](https://discord.gg/mtgrhXM5Xf) is a communit
 Your comments and feedback are welcome, and the development team is available via a handful of different channels.
 
 ### GitHub issues
-[GitHub issues](https://github.com/codestoryai/sidecar/issues) should be used for bugs and feature requests. How to submit good bugs and feature requests is described in [How to Contribute](https://github.com/codestoryai/sidecar/blob/main/HOW_TO_CONTRIBUTE.md) and how we track issues is described in [[Issue Tracking]].
+[GitHub issues](https://github.com/codestoryai/larp/issues) should be used for bugs and feature requests. How to submit good bugs and feature requests is described in [How to Contribute](https://github.com/codestoryai/larp/blob/main/HOW_TO_CONTRIBUTE.md) and how we track issues is described in [[Issue Tracking]].
 
 ### Discord
 As mentioned above, the [Aide Discord](https://discord.gg/mtgrhXM5Xf) has the development team available to look at your feedback. If there is an action to be tracked, an issue will be created on GitHub for providing visibility into the status of the feedback.
@@ -39,7 +39,7 @@ The Aide project is distributed across multiple repositories. Try to file the is
 |Component|Repository|
 |---|---|
 |The Aide code editor|[aide](https://github.com/codestoryai/aide)|
-|AI sidecar|[sidecar](https://github.com/codestoryai/sidecar)|
+|AI LARP|[larp](https://github.com/codestoryai/larp)|
 
 #### Maintained by the VSCode team
 We regularly pull changes from the VSCode project into Aide, so issues reported here when fixed will automatically be included in Aide. But if the fix is urgent and important, just file them under the [aide](https://github.com/codestoryai/aide) repository and we will follow up as required.
@@ -99,7 +99,7 @@ Please include the following with each issue:
 
 ### Creating Pull Requests
 
-* Please refer to the article on [creating pull requests](https://github.com/codestoryai/sidecar/blob/main/HOW_TO_CONTRIBUTE.md.md#pull-requests) and contributing to this project.
+* Please refer to the article on [creating pull requests](https://github.com/codestoryai/larp/blob/main/HOW_TO_CONTRIBUTE.md.md#pull-requests) and contributing to this project.
 
 ### Final Checklist
 
