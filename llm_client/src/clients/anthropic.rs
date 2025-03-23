@@ -580,6 +580,9 @@ impl AnthropicClient {
                         message.usage.cache_read_input_tokens
                     );
                 }
+                Ok(AnthropicEvent::Ping) => {
+                    debug!("Received ping event from Anthropic API in tool completion");
+                }
                 Err(e) => {
                     error!("Error parsing event: {:?}", e);
                     // break;
@@ -838,6 +841,9 @@ impl LLMClient for AnthropicClient {
                     input_cached_tokens =
                         input_cached_tokens + usage.cache_read_input_tokens.unwrap_or_default();
                 }
+                Ok(AnthropicEvent::Ping) => {
+                    debug!("Received ping event from Anthropic API");
+                }
                 Err(e) => {
                     println!("{:?}", e);
                     // break;
@@ -937,6 +943,9 @@ impl LLMClient for AnthropicClient {
                         println!("input_json_delta::{}", &partial_json);
                     }
                 },
+                Ok(AnthropicEvent::Ping) => {
+                    debug!("Received ping event from Anthropic API in prompt completion");
+                }
                 Err(_) => {
                     break;
                 }
