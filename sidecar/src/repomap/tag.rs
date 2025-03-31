@@ -247,22 +247,25 @@ impl TagIndex {
         ts_parsing: Arc<TSLanguageParsing>,
     ) -> Result<Vec<Tag>, RepoMapError> {
         let rel_path = self.get_rel_fname(&PathBuf::from(fname));
-        let config = ts_parsing.for_file_path(fname).ok_or_else(|| {
-            RepoMapError::ParseError(format!("Language configuration not found for: {}", fname,))
-        });
         let content = tokio::fs::read(fname).await;
         if let Err(_) = content {
             return Err(RepoMapError::IoError);
         }
         let content = content.expect("if let Err to hold");
-        if let Ok(config) = config {
-            let tags = config
-                .get_tags(&PathBuf::from(fname), &rel_path, content)
-                .await;
-            Ok(tags)
-        } else {
-            Ok(vec![])
-        }
+        let fname = fname.to_owned();
+        tokio::task::spawn_blocking(move || {
+            let config = ts_parsing.for_file_path(&fname).ok_or_else(|| {
+                RepoMapError::ParseError(format!("Language configuration not found for: {}", fname))
+            });
+            if let Ok(config) = config {
+                let tags = config.get_tags(&PathBuf::from(fname), &rel_path, content);
+                Ok(tags)
+            } else {
+                Ok(vec![])
+            }
+        })
+        .await
+        .map_err(RepoMapError::TaskFailed)?
     }
 
     pub fn get_tags_for_file(&self, file_name: &Path) -> Option<Vec<Tag>> {
