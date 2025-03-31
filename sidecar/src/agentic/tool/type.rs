@@ -268,6 +268,7 @@ impl std::fmt::Display for ToolType {
             ToolType::ContextCrunching => write!(f, "context_crunching"),
             ToolType::Think => write!(f, "Think"),
             ToolType::McpTool(name) => write!(f, "{}", name),
+            ToolType::OverwriteFile => write!(f, "overwrite_file"),
         }
     }
 }

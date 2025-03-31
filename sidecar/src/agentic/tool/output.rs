@@ -111,6 +111,7 @@ impl CodeToEditToolOutput {
 
 #[derive(Debug)]
 pub enum ToolOutput {
+    Success,
     PlanningBeforeCodeEditing(PlanningBeforeCodeEditResponse),
     CodeEditTool(String),
     LSPDiagnostics(LSPDiagnosticsOutput),
