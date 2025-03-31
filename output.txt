@@ -1,0 +1,201 @@
+// gRPC Frontend Implementation for Agent Farm
+//
+// 1. Service Definition
+// We've implemented a gRPC frontend that provides the following services:
+//
+// a) Streaming Services:
+// - AgentSessionChat: Handles chat interactions with streaming responses
+// - AgentSessionEdit: Manages code editing operations with streaming updates
+// - AgentToolUse: Handles tool operations with streaming results
+//
+// b) Unary Services:
+// - EditFile: Simple file editing operations
+// - ExtractDocumentation: Documentation extraction from code
+// - ValidateTreeSitter: Tree-sitter validation for code syntax
+//
+// 2. Implementation Details
+//
+// a) Protocol Buffers:
+// - Defined message types for all requests and responses
+// - Used optional fields for nullable values
+// - Implemented streaming responses for real-time updates
+// - Proper error handling with error types and messages
+//
+// b) Type Conversions:
+// - Implemented conversion functions between gRPC and internal types
+// - Handled all necessary data transformations for:
+//   * Positions and Ranges
+//   * User Context
+//   * Symbols and Documentation
+//   * Error types
+//
+// c) Error Handling:
+// - Proper error propagation from internal services
+// - Specific error handling for:
+//   * Authentication errors
+//   * Rate limiting
+//   * Internal server errors
+//   * Invalid requests
+//
+// 3. Integration with Existing Services
+//
+// The gRPC frontend integrates with existing services:
+// - Maintains compatibility with current HTTP/SSE endpoints
+// - Uses the same application state and services
+// - Shares authentication mechanisms
+// - Preserves all existing functionality
+//
+// 4. Benefits of gRPC Implementation
+//
+// a) Performance:
+// - Binary protocol reduces bandwidth usage
+// - Efficient streaming for real-time updates
+// - Better connection handling
+//
+// b) Developer Experience:
+// - Strong typing with protocol buffers
+// - Auto-generated client code
+// - Better IDE support
+// - Clear API contract
+//
+// c) Features:
+// - Bidirectional streaming
+// - Built-in load balancing
+// - Connection multiplexing
+// - Deadline propagation
+//
+// 5. Usage Example
+//
+// To use the gRPC service:
+// 1. Run both HTTP and gRPC servers:
+//    - HTTP on default port
+//    - gRPC on port + 1
+// 2. Connect using generated client code
+// 3. Use streaming endpoints for real-time operations
+// 4. Use unary endpoints for simple operations
+//
+// The implementation provides a modern, efficient interface while maintaining
+// backward compatibility with existing HTTP endpoints.
+
+syntax = "proto3";
+package agent_farm;
+
+// Main service definition
+service AgentFarmService {
+  // Agent Operations
+  rpc AgentSessionChat (AgentSessionRequest) returns (stream AgentResponse);
+  rpc AgentSessionEdit (AgentEditRequest) returns (stream AgentEditResponse);
+  rpc AgentToolUse (ToolUseRequest) returns (stream ToolUseResponse);
+  
+  // File Operations
+  rpc EditFile (EditFileRequest) returns (EditFileResponse);
+  
+  // Tree-Sitter Operations
+  rpc ExtractDocumentation (DocumentationRequest) returns (DocumentationResponse);
+  rpc ValidateTreeSitter (TreeSitterValidationRequest) returns (TreeSitterValidationResponse);
+}
+
+// Common Types
+message Position {
+  uint32 line = 1;
+  uint32 character = 2;
+}
+
+message Range {
+  Position start = 1;
+  Position end = 2;
+}
+
+message UserContext {
+  string repo_ref = 1;
+  repeated PreciseContext precise_context = 2;
+  optional CursorPosition cursor_position = 3;
+  optional ViewPort current_view_port = 4;
+  string language = 5;
+}
+
+// Request/Response Messages
+message AgentSessionRequest {
+  string user_query = 1;
+  string thread_id = 2;
+  string editor_url = 3;
+  UserContext user_context = 4;
+  bool is_deep_reasoning = 5;
+  bool with_lsp_enrichment = 6;
+  string access_token = 7;
+}
+
+message AgentResponse {
+  oneof response {
+    string thinking = 1;
+    string action = 2;
+    Error error = 3;
+  }
+}
+
+message AgentEditRequest {
+  string file_path = 1;
+  string content = 2;
+  Range edit_range = 3;
+  UserContext context = 4;
+}
+
+message AgentEditResponse {
+  string edited_content = 1;
+  Range modified_range = 2;
+}
+
+message ToolUseRequest {
+  string tool_name = 1;
+  map<string, string> parameters = 2;
+  UserContext context = 3;
+}
+
+message ToolUseResponse {
+  string result = 1;
+  bool success = 2;
+  optional string error = 3;
+}
+
+message EditFileRequest {
+  string file_path = 1;
+  string content = 2;
+}
+
+message EditFileResponse {
+  bool success = 1;
+  optional string error = 2;
+}
+
+message DocumentationRequest {
+  string file_content = 1;
+  string language = 2;
+}
+
+message DocumentationResponse {
+  repeated string documentation_strings = 1;
+}
+
+message TreeSitterValidationRequest {
+  string content = 1;
+  string language = 2;
+}
+
+message TreeSitterValidationResponse {
+  bool is_valid = 1;
+  optional string error = 2;
+}
+
+message Error {
+  string message = 1;
+  ErrorKind kind = 2;
+}
+
+enum ErrorKind {
+  UNKNOWN = 0;
+  USER = 1;
+  NOT_FOUND = 2;
+  CONFIGURATION = 3;
+  UPSTREAM_SERVICE = 4;
+  INTERNAL = 5;
+}
