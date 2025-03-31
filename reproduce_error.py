@@ -1,10 +1,10 @@
-import subprocess
 import sys
+import subprocess
 
 def main():
-    # Try to list available tools in zed
+    # Try to list available tools in sidecar
     try:
-        result = subprocess.run(['cargo', 'run', '--bin', 'sidecar', '--', 'tools', 'list'], 
+        result = subprocess.run(['cargo', 'run', '--bin', 'webserver', '--', 'tools', 'list'], 
                               cwd='sidecar',
                               capture_output=True,
                               text=True)

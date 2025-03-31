@@ -1,13 +1,21 @@
 use std::path::{Path, PathBuf};
-
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
 use crate::repo::state::StateSource;
 
+#[derive(Subcommand, Debug, Clone, Serialize, Deserialize)]
+pub enum Tools {
+    /// List all available tools
+    List,
+}
+
 #[derive(Serialize, Deserialize, Parser, Debug, Clone, Default)]
 #[clap(author, version, about, long_about = None)]
 pub struct Configuration {
+    #[clap(subcommand)]
+    pub tools: Option<Tools>,
+
     #[clap(short, long, default_value_os_t = default_index_dir())]
     #[serde(default = "default_index_dir")]
     /// Directory to store all persistent state
