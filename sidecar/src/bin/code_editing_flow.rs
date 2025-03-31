@@ -124,7 +124,7 @@ async fn main() {
 
     let _symbol_manager = SymbolManager::new(
         tool_broker.clone(),
-        symbol_broker.clone(),
+        editor_parsing.clone(),
         editor_parsing,
         anthropic_llm_properties.clone(),
     );

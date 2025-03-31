@@ -22,13 +22,14 @@ async fn main() {
     // we want to grab the implementations of the symbols over here which we are
     // interested in
     let editor_parsing = Arc::new(EditorParsing::default());
-    let symbol_broker = Arc::new(SymbolTrackerInline::new(editor_parsing.clone()));
+    let language_parsing = Arc::new(TSLanguageParsing::init());
+    let llm_broker = Arc::new(LLMBroker::new().await.expect("to initialize properly"));
     let tool_broker = Arc::new(
         ToolBroker::new(
-            Arc::new(LLMBroker::new().await.expect("to initialize properly")),
+            llm_broker.clone(),
             Arc::new(CodeEditBroker::new()),
-            symbol_broker.clone(),
-            Arc::new(TSLanguageParsing::init()),
+            editor_parsing.clone(),
+            language_parsing.clone(),
             ToolBrokerConfiguration::new(None, true),
             LLMProperties::new(
                 LLMType::GeminiPro,
@@ -39,7 +40,7 @@ async fn main() {
         .await,
     );
 
-    let tool_box = Arc::new(ToolBox::new(tool_broker, symbol_broker, editor_parsing));
+    let tool_box = Arc::new(ToolBox::new(tool_broker, editor_parsing.clone(), editor_parsing));
 
     // Use this to get back the parent-symbol and the child symbols which have
     // been edited in a file

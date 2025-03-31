@@ -15,8 +15,10 @@ use crate::{
         output::{CodeToEditToolOutput, ToolOutput},
         r#type::{Tool, ToolRewardScale},
     },
-    chunking::languages::TSLanguageParsing,
-    inline_completion::symbols_tracker::SymbolTrackerInline,
+    chunking::{
+        editor_parsing::EditorParsing,
+        languages::TSLanguageParsing,
+    },
 };
 
 use super::models::broker::CodeEditBroker;
@@ -28,7 +30,7 @@ use super::models::broker::CodeEditBroker;
 // cause sweep and aider are using this approach) [not doing this]
 
 pub struct FindCodeSectionsToEdit {
-    _symbol_tracking: Arc<SymbolTrackerInline>,
+    editor_parsing: Arc<EditorParsing>,
     ts_language_config: Arc<TSLanguageParsing>,
     code_broker: Arc<CodeEditBroker>,
     llm_client: Arc<LLMBroker>,
@@ -36,13 +38,13 @@ pub struct FindCodeSectionsToEdit {
 
 impl FindCodeSectionsToEdit {
     pub fn new(
-        symbol_tracking: Arc<SymbolTrackerInline>,
+        editor_parsing: Arc<EditorParsing>,
         ts_language_config: Arc<TSLanguageParsing>,
         code_broker: Arc<CodeEditBroker>,
         llm_client: Arc<LLMBroker>,
     ) -> Self {
         Self {
-            _symbol_tracking: symbol_tracking,
+            editor_parsing,
             ts_language_config,
             code_broker,
             llm_client,

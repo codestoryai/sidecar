@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await,
     );
 
-    let tool_box = Arc::new(ToolBox::new(tool_broker, symbol_broker, editor_parsing));
+    let tool_box = Arc::new(ToolBox::new(tool_broker, editor_parsing.clone(), editor_parsing));
 
     let selector = Selector::new(
         1.0,    // exploitation_weight
