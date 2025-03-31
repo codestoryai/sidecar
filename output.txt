@@ -1,0 +1,118 @@
+# Context Crunching in Agent Farm
+
+## Overview
+
+Context crunching is a mechanism used in the agent_farm project to manage the context window size when the LLM is processing a large amount of information. It helps prevent the context window from becoming too large, which could lead to performance issues or token limit errors.
+
+## Toggle Fort Reasoning
+
+The "toggle fort reasoning" is a feature that can be enabled or disabled to control whether the agent uses a multi-step reasoning process. When enabled:
+
+1. The agent breaks down complex tasks into smaller, more manageable steps
+2. It maintains a plan and gives out tasks to a simulated "junior engineer"
+3. It uses O3 (a specific LLM model) for orchestration
+
+This feature is controlled by environment variables and user settings:
+```rust
+let reasoning = if whoami::username() == "skcd".to_owned()
+    || whoami::username() == "root".to_owned()
+    || std::env::var("SIDECAR_ENABLE_REASONING").map_or(false, |v| !v.is_empty())
+{
+    reasoning
+} else {
+    // gate hard for now before we push a new version of the editor
+    false
+}
+```
+
+## Action Node Compression
+
+Action nodes represent steps taken by the agent during its execution. As these accumulate, they can consume a significant portion of the context window. The context crunching process compresses these action nodes by:
+
+1. Identifying when the input tokens exceed a threshold (60,000 tokens for standard LLMs, 120,000 for custom LLMs)
+2. Finding the last reasoning node as a starting point
+3. Summarizing the work done so far
+4. Creating a new starting point with the compressed context
+
+## O3 Usage
+
+The system uses a specific model called "O3MiniHigh" for context crunching and reasoning:
+
+```rust
+let llm_properties = match &self.context_crunching_llm {
+    Some(props) => props.clone(),
+    None => LLMProperties::new(
+        LLMType::O3MiniHigh,
+        llm_client::provider::LLMProvider::OpenAI,
+        llm_client::provider::LLMProviderAPIKeys::OpenAI(OpenAIProvider::new(
+            std::env::var("OPENAI_API_KEY").expect("env var to be present"),
+        )),
+    ),
+};
+```
+
+This model is specifically chosen for its ability to efficiently summarize and reason about the agent's progress.
+
+## Context Crunching Process
+
+The context crunching process follows these steps:
+
+1. **Trigger Detection**: In `agent_loop()` within `session/service.rs`, the system checks if the input tokens exceed the threshold
+2. **Context Collection**: It gathers:
+   - The original user instruction
+   - All action nodes since the last reasoning node
+   - Previous reasoning nodes for continuity
+3. **Summarization**: The `context_crunching()` method in `ToolUseAgent` is called with this context
+4. **LLM Processing**: The O3MiniHigh model processes this information with a specialized prompt
+5. **Output Generation**: The LLM generates:
+   - A summary of work done so far
+   - A revised instruction that maintains the original intent
+6. **Context Reset**: The session is reset with this new compressed context, and execution continues
+
+## When Context Crunching is Triggered
+
+Context crunching is triggered when:
+
+1. The context_crunching flag is enabled (controlled by username or environment variable)
+2. The input tokens exceed the threshold (60k for standard LLMs, 120k for custom LLMs)
+3. There are action nodes that can be compressed
+
+The relevant code in `session/service.rs`:
+
+```rust
+if context_crunching {
+    if let Some(input_tokens) = session
+        .action_nodes()
+        .last()
+        .map(|action_node| action_node.get_llm_usage_statistics())
+        .flatten()
+        .map(|llm_stats| {
+            llm_stats.input_tokens().unwrap_or_default()
+                + llm_stats.cached_input_tokens().unwrap_or_default()
+        })
+    {
+        // For custom LLMs, we use a higher token threshold
+        let token_threshold = if message_properties.llm_properties().llm().is_custom() {
+            120_000
+        } else {
+            60_000
+        };
+        if input_tokens >= token_threshold {
+            println!("context_crunching");
+            // ... context crunching logic ...
+        }
+    }
+}
+```
+
+## The Flow from tool_use Endpoint to Context Crunching
+
+1. **Entry Point**: The process starts at the `agent_tool_use` endpoint in `agentic.rs`
+2. **Session Service**: The request is passed to `tool_use_agentic()` in `session/service.rs`
+3. **Agent Loop**: Within the agent loop, the system checks if context crunching is needed
+4. **Context Crunching**: If triggered, `context_crunching()` is called on the `ToolUseAgent`
+5. **Processing**: The O3MiniHigh model processes the context and generates a summary
+6. **Session Reset**: The session is reset with the new compressed context
+7. **Continuation**: The agent continues execution with the compressed context
+
+This entire process ensures that the agent can handle long-running tasks without exceeding token limits, while maintaining the coherence and intent of the original instruction.
