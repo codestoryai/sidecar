@@ -86,6 +86,7 @@ diffy = "0.4.0"
 colored = "2.1.0"
 reqwest-middleware = "0.4.0"
 mcp_client_rs = "0.1.7"
+xmltree = "0.10.3"
 
 [target.'cfg(unix)'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }

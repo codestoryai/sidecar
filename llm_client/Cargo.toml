@@ -27,6 +27,7 @@ async-openai = "0.27.1"
 sqlx = { version = "0.7.2", features = ["sqlite", "migrate", "runtime-tokio-rustls", "chrono", "uuid"]}
 uuid = { version = "1.4.1", features = ["v4"] }
 chrono = { version = "0.4.38", features = ["serde"] }
+xmltree = "0.10.3"
 
 logging = { path = "../logging" }
 reqwest-middleware = { version = "0.4.0", features = ["json"] }
