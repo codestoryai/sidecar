@@ -6,11 +6,44 @@
 use llm_client::clients::types::LLMClientMessage;
 
 #[derive(Debug, Clone, serde::Serialize)]
+pub struct ChangeWeight {
+    frequency: u32,
+    importance: u8,
+    semantic_relation: f32,
+    user_interaction: u8,
+}
+
+impl ChangeWeight {
+    pub fn new(
+        frequency: u32,
+        importance: u8,
+        semantic_relation: f32,
+        user_interaction: u8,
+    ) -> Self {
+        Self {
+            frequency,
+            importance,
+            semantic_relation,
+            user_interaction,
+        }
+    }
+
+    pub fn calculate_score(&self) -> f32 {
+        (self.frequency as f32 * 0.3)
+            + (self.importance as f32 * 0.3)
+            + (self.semantic_relation * 0.2)
+            + (self.user_interaction as f32 * 0.2)
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct DiffFileContent {
     fs_file_path: String,
     file_content_latest: String,
-    // we can set this if we already have the file content
     file_content_updated: Option<String>,
+    change_weight: Option<ChangeWeight>,
+    last_modified: i64,
+    is_invalidated: bool,
 }
 
 impl DiffFileContent {
@@ -18,12 +51,29 @@ impl DiffFileContent {
         fs_file_path: String,
         file_content_latest: String,
         file_content_updated: Option<String>,
+        change_weight: Option<ChangeWeight>,
+        last_modified: i64,
     ) -> Self {
         Self {
             fs_file_path,
             file_content_latest,
             file_content_updated,
+            change_weight,
+            last_modified,
+            is_invalidated: false,
         }
+    }
+
+    pub fn invalidate(&mut self) {
+        self.is_invalidated = true;
+    }
+
+    pub fn is_invalidated(&self) -> bool {
+        self.is_invalidated
+    }
+
+    pub fn update_weight(&mut self, weight: ChangeWeight) {
+        self.change_weight = Some(weight);
     }
 
     pub fn fs_file_path(&self) -> &str {
@@ -42,6 +92,7 @@ pub struct DiffRecentChanges {
     l1_changes: String,
     l2_changes: String,
     file_contents: Vec<DiffFileContent>,
+    cache_threshold: f32,
 }
 
 impl DiffRecentChanges {
@@ -49,11 +100,13 @@ impl DiffRecentChanges {
         l1_changes: String,
         l2_changes: String,
         file_contents: Vec<DiffFileContent>,
+        cache_threshold: f32,
     ) -> Self {
         Self {
             l1_changes,
             l2_changes,
             file_contents,
+            cache_threshold,
         }
     }
 
@@ -67,6 +120,24 @@ impl DiffRecentChanges {
 
     pub fn l2_changes(&self) -> &str {
         &self.l2_changes
+    }
+
+    pub fn should_promote_to_l1(&self, file_content: &DiffFileContent) -> bool {
+        if let Some(weight) = &file_content.change_weight {
+            weight.calculate_score() >= self.cache_threshold
+        } else {
+            false
+        }
+    }
+
+    pub fn invalidate_cache_for_file(&mut self, file_path: &str) {
+        if let Some(file_content) = self
+            .file_contents
+            .iter_mut()
+            .find(|f| f.fs_file_path() == file_path)
+        {
+            file_content.invalidate();
+        }
     }
 
     pub fn to_llm_client_message(&self) -> Vec<LLMClientMessage> {
