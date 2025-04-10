@@ -32,6 +32,10 @@ pub struct EditedGitDiffFile {
     diff: String,
     current_content: String,
     updated_timestamp_ms: i64,
+    change_frequency: u32,
+    importance_score: u8,
+    semantic_relation_score: f32,
+    user_interaction_score: u8,
 }
 
 impl EditedGitDiffFile {
@@ -49,6 +53,22 @@ impl EditedGitDiffFile {
 
     pub fn current_content(&self) -> &str {
         &self.current_content
+    }
+
+    pub fn change_frequency(&self) -> u32 {
+        self.change_frequency
+    }
+
+    pub fn importance_score(&self) -> u8 {
+        self.importance_score
+    }
+
+    pub fn semantic_relation_score(&self) -> f32 {
+        self.semantic_relation_score
+    }
+
+    pub fn user_interaction_score(&self) -> u8 {
+        self.user_interaction_score
     }
 }
 
@@ -78,20 +98,48 @@ impl EditedFiles {
 #[async_trait]
 impl Tool for EditedFiles {
     async fn invoke(&self, input: ToolInput) -> Result<ToolOutput, ToolError> {
-        let context = input.should_edited_files()?;
-        let editor_endpoint = context.editor_url.to_owned() + "/recent_edits";
-        let response = self
-            .client
-            .post(editor_endpoint)
-            .body(serde_json::to_string(&context).map_err(|_e| ToolError::SerdeConversionFailed)?)
-            .send()
-            .await
-            .map_err(|_e| ToolError::ErrorCommunicatingWithEditor)?;
-        let response: EditedFilesResponse = response.json().await.map_err(|e| {
-            eprintln!("edited_files::{:?}", &e);
-            ToolError::SerdeConversionFailed
-        })?;
-        Ok(ToolOutput::edited_files(response))
+        match input {
+            ToolInput::EditedFiles(request) => {
+                let response = self
+                    .client
+                    .get(&format!("{}/api/v1/edited-files", request.editor_url))
+                    .send()
+                    .await
+                    .map_err(|e| ToolError::NetworkError(e.to_string()))?
+                    .json::<EditedFilesResponse>()
+                    .await
+                    .map_err(|e| ToolError::DeserializationError(e.to_string()))?;
+
+                // Calculate weights for each file
+                let weighted_files = response.changed_files().into_iter().map(|file| {
+                    let weight = ChangeWeight::new(
+                        file.change_frequency(),
+                        file.importance_score(),
+                        file.semantic_relation_score(),
+                        file.user_interaction_score(),
+                    );
+                    (file, weight)
+                });
+
+                // Create DiffFileContent with weights
+                let file_contents = weighted_files
+                    .map(|(file, weight)| {
+                        DiffFileContent::new(
+                            file.fs_file_path().to_owned(),
+                            file.current_content().to_owned(),
+                            None,
+                            Some(weight),
+                            file.updated_timestamp_ms(),
+                        )
+                    })
+                    .collect();
+
+                Ok(ToolOutput::EditedFiles(EditedFilesResponse {
+                    changed_files: file_contents,
+                }))
+            }
+            _ => Err(ToolError::WrongToolInput),
+        }
     }
 
     fn tool_description(&self) -> String {
@@ -106,7 +154,7 @@ impl Tool for EditedFiles {
         vec![]
     }
 
-    fn get_reward_scale(&self, _trajectory_length: usize) -> Vec<ToolRewardScale> {
-        vec![]
+    fn reward_scale(&self) -> ToolRewardScale {
+        ToolRewardScale::new(1.0, 0.0)
     }
 }
