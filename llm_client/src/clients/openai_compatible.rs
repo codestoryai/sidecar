@@ -167,6 +167,20 @@ impl LLMClient for OpenAICompatibleClient {
             .messages(messages)
             .temperature(request.temperature())
             .stream(true);
+            
+        if let Some(reasoning_effort) = request.reasoning_effort() {
+            match reasoning_effort {
+                crate::clients::types::ReasoningEffort::Low => {
+                    request_builder = request_builder.reasoning_effort(async_openai::types::ReasoningEffort::Low);
+                }
+                crate::clients::types::ReasoningEffort::Medium => {
+                    request_builder = request_builder.reasoning_effort(async_openai::types::ReasoningEffort::Medium);
+                }
+                crate::clients::types::ReasoningEffort::High => {
+                    request_builder = request_builder.reasoning_effort(async_openai::types::ReasoningEffort::High);
+                }
+            }
+        }
         if let Some(frequency_penalty) = request.frequency_penalty() {
             request_builder = request_builder.frequency_penalty(frequency_penalty);
         }

@@ -243,8 +243,19 @@ impl LLMClient for OpenAIClient {
             request_builder = request_builder.temperature(request.temperature());
         }
 
-        // if its o1 or o3-mini we should set reasoning_effort to high
-        if llm_model == &LLMType::O1 || llm_model == &LLMType::O3MiniHigh {
+        if let Some(reasoning_effort) = request.reasoning_effort() {
+            match reasoning_effort {
+                crate::clients::types::ReasoningEffort::Low => {
+                    request_builder = request_builder.reasoning_effort(ReasoningEffort::Low);
+                }
+                crate::clients::types::ReasoningEffort::Medium => {
+                    request_builder = request_builder.reasoning_effort(ReasoningEffort::Medium);
+                }
+                crate::clients::types::ReasoningEffort::High => {
+                    request_builder = request_builder.reasoning_effort(ReasoningEffort::High);
+                }
+            }
+        } else if llm_model == &LLMType::O1 || llm_model == &LLMType::O3MiniHigh {
             request_builder = request_builder.reasoning_effort(ReasoningEffort::High);
         }
 

@@ -685,6 +685,13 @@ impl LLMClientMessage {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ReasoningEffort {
+    Low,
+    Medium,
+    High,
+}
+
 #[derive(Clone, Debug)]
 pub struct LLMClientCompletionRequest {
     model: LLMType,
@@ -693,6 +700,7 @@ pub struct LLMClientCompletionRequest {
     frequency_penalty: Option<f32>,
     stop_words: Option<Vec<String>>,
     max_tokens: Option<usize>,
+    reasoning_effort: Option<ReasoningEffort>,
 }
 
 #[derive(Clone)]
@@ -771,6 +779,7 @@ impl LLMClientCompletionRequest {
             frequency_penalty,
             stop_words: None,
             max_tokens: None,
+            reasoning_effort: None,
         }
     }
 
@@ -858,6 +867,15 @@ impl LLMClientCompletionRequest {
 
     pub fn get_max_tokens(&self) -> Option<usize> {
         self.max_tokens
+    }
+
+    pub fn set_reasoning_effort(mut self, reasoning_effort: ReasoningEffort) -> Self {
+        self.reasoning_effort = Some(reasoning_effort);
+        self
+    }
+    
+    pub fn reasoning_effort(&self) -> Option<&ReasoningEffort> {
+        self.reasoning_effort.as_ref()
     }
 }
 
