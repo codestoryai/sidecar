@@ -9,3 +9,6 @@ resolver = "2"
 
 [profile.release]
 lto = "thin"
+
+[dependencies]
+octocrab = "0.32.0"
